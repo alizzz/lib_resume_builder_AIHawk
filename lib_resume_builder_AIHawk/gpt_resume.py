@@ -201,12 +201,14 @@ class LLMResumer:
     
     def generate_html_resume(self) -> str:
         # Generate all sections of the resume
-        header = self.generate_header()
-        education = self.generate_education_section()
-        work_experience = self.generate_work_experience_section()
-        side_projects = self.generate_side_projects_section()
-        achievements = self.generate_achievements_section()
-        additional_skills = self.generate_additional_skills_section()
+        header = self.generate_header() #static
+        education = self.generate_education_section() #static
+        work_experience = self.generate_work_experience_section() #generate by merging experience and job description
+        side_projects = self.generate_side_projects_section() #do not need
+        achievements = self.generate_achievements_section() #generate
+        additional_skills = self.generate_additional_skills_section() #generate
+        #add
+        carrer_summary = self.generate_career_summary() #generate by merging standard career summary and job description
 
         # Combine all sections into a single resume
         full_resume = (

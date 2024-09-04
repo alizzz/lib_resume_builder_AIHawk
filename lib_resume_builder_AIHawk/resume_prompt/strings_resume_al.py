@@ -243,15 +243,3 @@ Act as an HR expert and resume writer with a specialization in creating ATS-frie
 ```
 The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
 """
-prompt_career_summary="""
-Act as an HR expert and resume writer with a specialization in creating ATS-friendly resumes. 
-Your task is to update the aplicant's career summary below and make it clearly reflecting the job requirements. Make it very attractive to the hiring manager
-
-#career summary
-{career_summary}
-
-#job requirements:
-{job requirements}
-
-The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
-"""

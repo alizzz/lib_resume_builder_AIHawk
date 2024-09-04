@@ -183,7 +183,7 @@ class LLMResumeJobDescription:
         output = chain.invoke({"text": job_description_text})
         self.job_description = output
     
-    def generate_header(self) -> str:
+    def _generate_header_gpt(self) -> str:
         header_prompt_template = self._preprocess_template_string(
             self.strings.prompt_header
         )
@@ -195,6 +195,13 @@ class LLMResumeJobDescription:
         })
         return output
 
+    def generate_header(self, header_prompt_template=None) -> str:
+        if header_prompt_template is None:
+            return self._generate_header_gpt()
+
+
+        return output
+
     def generate_education_section(self) -> str:
         education_prompt_template = self._preprocess_template_string(
             self.strings.prompt_education
@@ -203,6 +210,17 @@ class LLMResumeJobDescription:
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
             "education_details": self.resume.education_details,
+            "job_description": self.job_description
+        })
+        return output
+    def generate_career_summary(self)->str:
+        career_summary_prompt_template = self._preprocess_template_string(
+            self.string.prompt_career_summary
+        )
+        prompt = ChatPromptTemplate.from_template(career_summary_prompt_template)
+        chain = prompt | self.llm_cheap | StrOutputParser()
+        output = chain.invoke({
+            "career_summary": self.resume.education_details,
             "job_description": self.job_description
         })
         return output
