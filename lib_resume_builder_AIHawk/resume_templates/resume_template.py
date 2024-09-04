@@ -33,7 +33,8 @@ resume_template="""
 <div title="education_summary" align="left" class="education_summary"</div>
 <h1 class="section-header">Professional Experience</h1>
 <div title="professional_experience" class="professional_experience">$professional_experience</div>
-
+<h1 class="section-header">Skills</h1>
+<div title="additional_skills" class="additional_skills">$additional_skills</div>
 """
 
 resume_template_applicant_name_header="""
