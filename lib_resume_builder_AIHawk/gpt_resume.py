@@ -200,6 +200,8 @@ class LLMResumer:
         return output
     
     def generate_html_resume(self) -> str:
+        print(f'In gpt_resume.generate_html_resume()', flush=True)
+
         # Generate all sections of the resume
         header = self.generate_header() #static
         education = self.generate_education_section() #static

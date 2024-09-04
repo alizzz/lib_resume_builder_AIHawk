@@ -18,6 +18,7 @@ from langchain_community.vectorstores import FAISS
 from lib_resume_builder_AIHawk.config import global_config
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
+#from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 load_dotenv()
 
 
@@ -198,7 +199,8 @@ class LLMResumeJobDescription:
     def generate_header(self, header_prompt_template=None) -> str:
         if header_prompt_template is None:
             return self._generate_header_gpt()
-
+        output="""
+        """
 
         return output
 
@@ -292,9 +294,165 @@ class LLMResumeJobDescription:
         
         return output
 
-    
+
+    #generate static header based on applicant information
+    #ToDo: load from configuration
+    def generate_applicant_name_header(self):
+        applicant = {
+            name:"Alexander",
+            surname:"Liss",
+            suffix:", PhD, MBA",
+            phone:"(646) 867 0808",
+            email:"hawk@talkdirect.net"
+        }
+        output = f'<span style="font-variant: small-caps"><b>{applicant.name} {applicant.surname}{applicant.suffix}</b></span> • {applicant.phone} • {applicant.email}'
+        return output
+
+    #ToDo: generate based on position name
+    def generate_application_title(self):
+        output=f'Head of Data Science, Analytics, ML Engineering'
+        return output
+
+    #ToDo: read from config or build based on job description
+    #ToDo: genAI
+    def generate_career_summary(self):
+        output = """
+        <b>I am a seasoned AI/ML executive who drives R&amp;D and innovative solutions
+        through visionary leadership, broad technical expertise, and
+        strategic collaboration</b>. Known for loyalty, impactful results,
+        and a supportive, even-tempered approach for the last two
+        dozen years I deliver sustainable growth with adaptability and
+        continuous learning, fostering and nurturing high-performing
+        internationally distributed teams, extensive collaboration, and
+        x-functional alignment. </p>
+        <p align="left" class="career-summary">During
+        my entire career I’ve been translating business requirements into
+        technical definitions, leading advanced R&amp;D projected and
+        converting it to ground breaking products. I am proficient in the
+        Artificial Intelligence, Machine Learning, Database, Software and
+        Networking technology. I have a proven track record in building
+        robust product analytics, data science, and developing cutting-edge
+        ML algorithms such as computer vision, NLP, classification,
+        supervised/unsupervised learning, and anomaly detection to deliver
+        business impact by solving customer problems and growing revenue. I
+        am skilled in data stewardship,  business analytics, and building AI
+        as-a-service in the cloud. I have a proven success in delivering
+        impactful, value-adding solutions, overseeing full product
+        development cycles, and meeting critical milestones. I have a deep
+        passion for research, tolerance for ambiguity, and a positive &quot;can
+        do&quot; attitude with a strong business orientation.
+        </p>
+        <p align="left" class="career-summary">
+        As you can see below my track record includes over <b>25 
+        years of progressive technical and business experience</b> 
+        delivering innovative, business-defining products, and <b>18 years of successful team management and engineering leadership</b> 
+        specifically focusing on building and nurturing diverse,
+        geographically distributed teams of engineers and scientists. I
+        demonstrated ability to build a common culture based on trust,
+        ownership and accountability. I excel in team building, resource
+        orchestration, and aligning teams with strategic goals to ensure
+        seamless execution, building a great value for customers and
+        increasing revenue.</p>
+        """
+        return output
+
+    #ToDo: read from config
+    def generate_career_timeline(self):
+        output="""
+        <table width="720" cellpadding="0" cellspacing="0">
+            <col width="140"/>
+            <col width="140"/>
+            <col width="240"/>
+            <col width="100"/>
+            <col width="75"/>
+            <tr>
+                <td align="left"><b><i>HyperC</i></b></td>
+                <td align="left"><i>AI Strategy and Product, Data Science, ML Engineering</i></td>
+                <td align="left"><b>Manager AIML Engineering</b></td>
+                <td align="right">San Francisco Bay, CA</td>
+                <td align="right">2023-2024</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Google</i></b></td>
+                <td align="left"><i>Data Science, Engineering</i></td>
+                <td align="left"><b>Head of Data Science, CX lab</b></td>
+                <td align="right">Mountain View, CA</td>
+                <td align="right">2021-2023</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Tensorsoft</i></b></td>
+                <td align="left"><i>Data Science, AIML, Eng</i></td>
+                <td align="left"><b>Co-founder, CTO and Lead Data Science Engineer</b></td>
+                <td align="right">Mountain View, CA</td>
+                <td align="right">2016-2021</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Keenetix</i></b></td>
+                <td align="left"><i>Data Science, Analytics</i></td>
+                <td align="left"><b>Product Manager, Data Science</b></td>
+                <td align="right">Salem, NH</td>
+                <td align="right">2010-2016</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Keenetix</i></b></td>
+                <td align="left"><i>Data Science, Analytics</i></td>
+                <td align="left"><b>Project Dev Manager, Data Science</b></td>
+                <td align="right">Salem, NH</td>
+                <td align="right">2008-2010</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Keenetix</i></b></td>
+                <td align="left"><i>Data Science, Analytics</i></td>
+                <td align="left"><b>Lead Dev Engineer, Data Science</b></td>
+                <td align="right">Salem, NH</td>
+                <td align="right">2005-2008</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Digimarc/Polaroid</i></b></td>
+                <td align="left"><i>Image Analysis, Fraud Detection</i></td>
+                <td align="left"><b>Principal Engineer, Data Eng Lead</b></td>
+                <td align="right">Burlington, MA</td>
+                <td align="right">2002-2005</td>
+            </tr>
+            <tr>
+                <td align="left"><b><i>Comverse Technology</i></b></td>
+                <td align="left"><i>DSP, Speech Recognition</i></td>
+                <td align="left"><b>Principal Software Eng</b></td>
+                <td align="right">Wakefield, MA</td>
+                <td align="right">1999-2002</td>
+            </tr>
+        </table>
+        """
+        return output
+
+    #ToDo: Load from configuration
+    def generate_education_summary(self):
+        output="""
+        <ul class="education-summary>
+            <li><p align="justify"><b>Doctor of Philosophy (PhD)</b> Tufts University, MA</p></li>
+            <li><p align="justify"><b>MBA</b> <i>Summa Cum Laude</i>, Babson College, MA</p></li>
+            <li><p align="justify" class="education-summary"><b>Master of Science (MSc)</b> St.Petersburg, Russia</p></li>
+        </ul>
+        """
+        return output
+
+    def generate_academic_appointments(self):
+        output=""
+        return output
+
+    #ToDo: 1. read experience from config
+    #ToDo: 2. use genAI. Generate updated experience based on job description
+    def generate_professional_experience(self):
+
+        output=resume_template_job_experience
+        return output
+
+    def generate_footer(self):
+        output=""
+        return output
 
     def generate_html_resume(self) -> str:
+        print(f'In gpt_resume_job_description.generate_html_resume()', flush=True)
         # Define a list of functions to execute in parallel
         def header_fn():
             return self.generate_header()
@@ -314,16 +472,50 @@ class LLMResumeJobDescription:
         def additional_skills_fn():
             return self.generate_additional_skills_section()
 
+        def applicant_name_header_fn():
+            return self.generate_applicant_name_header()
+
+        def application_title_fn():
+            return self.generate_application_title()
+
+        def career_summary_fn():
+            return self.generate_career_summary()
+        def career_timeline_fn():
+            return self.generate_career_timeline()
+        def education_summary_fn():
+            return self.generate_education_summary()
+        def professional_experience_fn():
+            return self.generate_professional_experience()
+        def academic_appointments_fn():
+            return self.generate_academic_appointments()
+        def skills_fn():
+            return self.generate_additional_skills_section()
+        def footer_fn():
+            return self.generate_footer()
+
+
         # Create a dictionary to map the function names to their respective callables
         functions = {
-            "header": header_fn,
-            "education": education_fn,
-            "work_experience": work_experience_fn,
-            "side_projects": side_projects_fn,
-            "achievements": achievements_fn,
-            "additional_skills": additional_skills_fn,
+            "applicant_name_header": applicant_name_header_fn,
+            "application_title":application_title_fn,
+            "career_summary": career_summary_fn,
+            "career_timeline":career_timeline_fn,
+            "education_summary":education_summary_fn,
+            "professional_experience":professional_experience_fn,
+            "academic_appointments":academic_appointments_fn,
+            "achievements":achievements_fn,
+            "skills":skills_fn,
+            "footer":footer_fn
         }
-
+#
+#        "header": header_fn,
+#            "education": education_fn,
+#            "work_experience": work_experience_fn,
+#            "side_projects": side_projects_fn,
+#            "achievements": achievements_fn,
+#            "additional_skills": additional_skills_fn
+#       }
+#
         # Use ThreadPoolExecutor to run the functions in parallel
         with ThreadPoolExecutor() as executor:
             future_to_section = {executor.submit(fn): section for section, fn in functions.items()}
