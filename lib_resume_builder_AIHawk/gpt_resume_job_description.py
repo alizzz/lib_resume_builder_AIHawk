@@ -3,6 +3,7 @@ import os
 import tempfile
 import textwrap
 import time
+import re
 from datetime import datetime
 from typing import Dict, List
 from langchain_community.document_loaders import TextLoader
@@ -19,8 +20,27 @@ from lib_resume_builder_AIHawk.config import global_config
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 #from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
-load_dotenv()
+import lib_resume_builder_AIHawk.resume_templates.resume_template
+import os
+import os.path
+import sys
 
+
+load_dotenv()
+#ToDo: make it read config file
+template_file = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_template.html')
+css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_al_hawk.css')
+full_resume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
+
+#removes \n and multiple spaces from a string
+def clean_html_string(html_string):
+    # Remove newline characters and leading/trailing spaces
+    cleaned_string = html_string.replace("\n", " ").strip()
+
+    # Replace multiple spaces with a single space
+    cleaned_string = re.sub(r'\s+', ' ', cleaned_string)
+
+    return cleaned_string
 
 class LLMLogger:
     
@@ -162,7 +182,7 @@ class LLMResumeJobDescription:
             return "\n\n".join(doc.page_content for doc in docs)
         context_formatter = vectorstore.as_retriever() | format_docs
         question_passthrough = RunnablePassthrough()
-        chain_job_descroption= prompt | self.llm_cheap | StrOutputParser()
+        chain_job_description= prompt | self.llm_cheap | StrOutputParser()
         summarize_prompt_template = self._preprocess_template_string(self.strings.summarize_prompt_template)
         prompt_summarize = ChatPromptTemplate.from_template(summarize_prompt_template)
         chain_summarize = prompt_summarize | self.llm_cheap | StrOutputParser()
@@ -171,12 +191,13 @@ class LLMResumeJobDescription:
                 "context": context_formatter,
                 "question": question_passthrough,
             }
-            | chain_job_descroption
+            | chain_job_description
             | (lambda output: {"text": output})
             | chain_summarize
         )
         result = qa_chain.invoke("Provide, full job description")
         self.job_description = result
+        print(f'Job description:\n{result}')
 
     def set_job_description_from_text(self, job_description_text):
         prompt = ChatPromptTemplate.from_template(self.strings.summarize_prompt_template)
@@ -201,7 +222,6 @@ class LLMResumeJobDescription:
             return self._generate_header_gpt()
         output="""
         """
-
         return output
 
     def generate_education_section(self) -> str:
@@ -215,7 +235,7 @@ class LLMResumeJobDescription:
             "job_description": self.job_description
         })
         return output
-    def generate_career_summary(self)->str:
+    def generate_career_summary_ai(self)->str:
         career_summary_prompt_template = self._preprocess_template_string(
             self.string.prompt_career_summary
         )
@@ -298,14 +318,14 @@ class LLMResumeJobDescription:
     #generate static header based on applicant information
     #ToDo: load from configuration
     def generate_applicant_name_header(self):
-        applicant = {
-            name:"Alexander",
-            surname:"Liss",
-            suffix:", PhD, MBA",
-            phone:"(646) 867 0808",
-            email:"hawk@talkdirect.net"
-        }
-        output = f'<span style="font-variant: small-caps"><b>{applicant.name} {applicant.surname}{applicant.suffix}</b></span> • {applicant.phone} • {applicant.email}'
+    #       applicant = {
+    #       name:"Alexander",
+    #       surname:"Liss",
+    #       suffix:", PhD, MBA",
+    #       phone:"(646) 867 0808",
+    #       email:"hawk@talkdirect.net"
+     #   }
+        output = f'<span style="font-variant: small-caps"><b>Alexander Liss</b></span> • +1 (646) 867 0808 • hawk@talkdirect.net'
         return output
 
     #ToDo: generate based on position name
@@ -316,7 +336,7 @@ class LLMResumeJobDescription:
     #ToDo: read from config or build based on job description
     #ToDo: genAI
     def generate_career_summary(self):
-        output = """
+        raw_output = """
         <b>I am a seasoned AI/ML executive who drives R&amp;D and innovative solutions
         through visionary leadership, broad technical expertise, and
         strategic collaboration</b>. Known for loyalty, impactful results,
@@ -354,11 +374,12 @@ class LLMResumeJobDescription:
         seamless execution, building a great value for customers and
         increasing revenue.</p>
         """
+        output = clean_html_string(raw_output)
         return output
 
     #ToDo: read from config
     def generate_career_timeline(self):
-        output="""
+        raw_output="""
         <table width="720" cellpadding="0" cellspacing="0">
             <col width="140"/>
             <col width="140"/>
@@ -423,17 +444,19 @@ class LLMResumeJobDescription:
             </tr>
         </table>
         """
+        output = clean_html_string(raw_output)
         return output
 
     #ToDo: Load from configuration
     def generate_education_summary(self):
-        output="""
+        raw_output="""
         <ul class="education-summary>
             <li><p align="justify"><b>Doctor of Philosophy (PhD)</b> Tufts University, MA</p></li>
             <li><p align="justify"><b>MBA</b> <i>Summa Cum Laude</i>, Babson College, MA</p></li>
             <li><p align="justify" class="education-summary"><b>Master of Science (MSc)</b> St.Petersburg, Russia</p></li>
         </ul>
         """
+        output = clean_html_string(raw_output)
         return output
 
     def generate_academic_appointments(self):
@@ -443,8 +466,123 @@ class LLMResumeJobDescription:
     #ToDo: 1. read experience from config
     #ToDo: 2. use genAI. Generate updated experience based on job description
     def generate_professional_experience(self):
-
-        output=resume_template_job_experience
+        raw_output="""
+            <table width="720" cellpadding="0" cellspacing="0">
+                    <col width="140"/>
+                    <col width="240"/>
+                    <col width="100"/>
+                    <col width="75"/>
+                    <tr>
+                        <td align="left"><b><i>HyperC</i></b></td>
+                        <td align="left"><b>Manager ML Engineering</b></td>
+                        <td align="right">San Francisco Bay, CA</td>
+                        <td align="right">2023-Present</td>
+                    </tr>
+            </table>
+            <div align="justify" class="prof-exp-details">
+                <p><i>Leading a globally distributed engineering team</i></p>
+                <p>Managed a global team dedicated to creating a state-of-the-art scalable distributed AI data and networking platform serving both B2B and B2C
+                customers. Ensured full compliance with government regulations, privacy laws, and ethical standards.</p>
+            <ul>
+                <li><p align="justify" style="margin-bottom: 0.04in">Spearheaded the development of strategic direction and provided visionary leadership across various teams and stakeholders. Formulated and executed strategic objectives in alignment with executive goals, promoting a culture of collaboration and mutual support throughout the organization.</p></li>
+                <li><p>Directed and nurtured a top-tier team, focusing on recruitment, motivation, and retention, transforming the team from a few individuals to over 40 in six years. Maintained attrition rates at twice below the industry average and achieved a 97% rate of employee satisfaction. Cultivated a culture of excellence, accountability, and high standards, fostering the development of new leadership within the team.</p></li>
+                <li>Administered a multimillion-dollar budget throughout the lifecycle of pivotal projects, including the development and deployment of a <b>genAI ML platform</b>, an innovative <b>image processing and content extraction framework</b>, a cutting-edge <b>recommender system</b>, a <b>non-linear search engine</b>, and a comprehensive <b>experimentation</b> platform along with several <b>mobile applications</b>. Achieved a 90% reduction in operational costs and enhanced customer satisfaction by leveraging AI edge processing, substantially increasing business value and EBITDA.</li>
+                <li><p>Developed and presented a compelling pitch deck during M&amp;A transactions, showcasing the company's leadership in AI technology and driving investor interest.</p></li>
+            </ul></div>
+            <table width="714" cellpadding="7" cellspacing="0">
+                <col width="113"/>
+                <col width="239"/>
+                <col width="94"/>
+                <col width="68"/>
+                <tr>
+                    <td align="left"><b><i>Google</i></b></td>
+                    <td align="left"><b>Head of Data Science, CX lab</b></td>
+                    <td align="right">Mountain View, CA</td>
+                    <td align="right">2021-2023</td>
+                </tr>
+            </table>
+            <div align="justify" class="prof-exp-details">
+            <ul>
+                <li><p align="left">Collaborated
+                with marketing and product teams to build a clear vision for a
+                data-driven customer segmentation project. Communicated the strategy
+                internally and externally, aligning feedback, performance reviews,
+                and resource allocation with the company's broader goals. The
+                successful implementation of the project resulted in a 12.5%
+                improvement in customer targeting accuracy and a 3.6% increase in
+                customer retention.</p></li>
+                <li><p align="left">Championed
+                diversity and inclusion initiatives within the data science team,
+                implementing an inclusive hiring strategy. Modeled inclusive
+                behavior and facilitated respectful discussions to address bias in
+                data analysis, ensuring equitable outcomes in the team's projects
+                and discussions.</p></li>
+                <li><p align="left" >Mentored
+                and coached a team of data scientists to enhance their technical
+                proficiency and foster a culture of continuous self-development.
+                Encouraged research initiatives and “stretch” projects to
+                explore innovative data analysis techniques. The team's professional
+                growth led to a 40% increase in data-driven insights, driving
+                strategic decision-making across the organization.</p></li></ul></div>
+            <table width="714" cellpadding="7" cellspacing="0">
+                <col width="113"/>
+                <col width="239"/>
+                <col width="94"/>
+                <col width="68"/>
+                <tr>
+                    <td align="left"><b><i>Tensorsoft</i></b></td>
+                    <td align="left"><i>Data Science, AIML, Eng</i></td>
+                    <td align="left"><b>Co-founder, CTO and Lead Data Science Engineer</b></td>
+                    <td align="right">Mountain View, CA</td>
+                    <td align="right">2016-2021</td>
+                </tr>
+            </table>
+            <div align="justify" class="prof-exp-details">
+            <ul>
+                <li>Developed and integrated customer segmentation for search relevancy</li>
+                <li>Developed and maintained a critical software tools for recommendation engine</li>
+                <li>Played an integral role in the development team</li>
+            </ul></div>
+            <table width="714" cellpadding="7" cellspacing="0">
+                <col width="113"/>
+                <col width="239"/>
+                <col width="94"/>
+                <col width="68"/>
+                <tr>
+                        <td align="left"><b><i>Keenetix</i></b></td>
+                        <td align="left"><b>Product Manager, Data Science</b></td>
+                        <td align="right">Salem, NH</td>
+                        <td align="right">2010-2016</td>
+                    </tr>
+                    <tr>
+                        <td align="left"><b><i>Keenetix</i></b></td>
+                        <td align="left"><b>Project Dev Manager, Data Science</b></td>
+                        <td align="right">Salem, NH</td>
+                        <td align="right">2008-2010</td>
+                    </tr>
+                    <tr>
+                        <td align="left"><b><i>Keenetix</i></b></td>
+                        <td align="left"><b>Lead Dev Engineer, Data Science</b></td>
+                        <td align="right">Salem, NH</td>
+                        <td align="right">2005-2008</td>
+                    </tr>
+                </table>
+            <div align="justify" class="prof-exp-details">
+                <ul>
+                <li><p align="left" style="margin-bottom: 0.04in">Built,
+                lead, and motivated a global distributed engineering team of
+                managers, engineers, and data scientists delivering scalable machine
+                learning solutions in multi-spectral remote sensing for regulated
+                industries, government, and NASA with a focus on customer needs.</p></li>
+                <li><p align="left" style="margin-bottom: 0.04in">Created
+                technical solutions based on sound engineering principals to derive
+                actionable insights and to facilitate business decision-making in
+                real time, by merging GIS, multi-spectral imagery, Lidar, and SAR
+                satellite data with health and climate records to create
+                vulnerability scores and risk maps for WHO.</p></li>
+                </ul></div>
+        """
+        output = clean_html_string(raw_output)
         return output
 
     def generate_footer(self):
@@ -454,6 +592,17 @@ class LLMResumeJobDescription:
     def generate_html_resume(self) -> str:
         print(f'In gpt_resume_job_description.generate_html_resume()', flush=True)
         # Define a list of functions to execute in parallel
+
+        def styles_css_fn() -> str:
+            css = ""
+            try:
+                with open(css_file, 'r') as f:
+                    css = clean_html_string(f.read())
+            except Exception as e:
+                print(f"Error during opening css file: {css_file}"
+                      f"error: {e}")
+            return css
+
         def header_fn():
             return self.generate_header()
 
@@ -484,6 +633,8 @@ class LLMResumeJobDescription:
             return self.generate_career_timeline()
         def education_summary_fn():
             return self.generate_education_summary()
+        def education_x_fn():
+            return self.generate_education_summary()
         def professional_experience_fn():
             return self.generate_professional_experience()
         def academic_appointments_fn():
@@ -493,7 +644,6 @@ class LLMResumeJobDescription:
         def footer_fn():
             return self.generate_footer()
 
-
         # Create a dictionary to map the function names to their respective callables
         functions = {
             "applicant_name_header": applicant_name_header_fn,
@@ -501,6 +651,7 @@ class LLMResumeJobDescription:
             "career_summary": career_summary_fn,
             "career_timeline":career_timeline_fn,
             "education_summary":education_summary_fn,
+            "education": education_x_fn,
             "professional_experience":professional_experience_fn,
             "academic_appointments":academic_appointments_fn,
             "achievements":achievements_fn,
@@ -527,18 +678,71 @@ class LLMResumeJobDescription:
                 except Exception as exc:
                     print(f'{section} generated an exception: {exc}')
 
+        full_resume_template=None
+        full_resume=None
+        try:
+            with open(template_file, 'r') as file:
+                full_resume_template = file.read().replace('\n', '')
+        except Exception as e:
+            print(f"Error during opening template file: {template_file}"
+                  f"error: {e}")
+
+        print(f'line 544', flush=True)
+        print(f'results::\n{results}', flush=True)
+        if full_resume_template is not None:
+            full_resume=full_resume_template.format(
+                applicant_name_header = results["applicant_name_header"],
+                application_title = results["application_title"],
+                career_summary = results["career_summary"],
+                career_timeline = results["career_timeline"],
+                education_summary = results["education_summary"],
+                professional_experience = results["professional_experience"],
+                achievements = results["achievements"],
+                education = results["education"],
+                skills = results["skills"]
+            )
+
+        else:
+            try:
+                with open(full_resume_template, 'r') as file:
+                    full_resume = file.read().replace('\n', '')
+            except Exception as e:
+                print(f"Error during opening template file: {template_file}"
+                      f"error: {e}")
+                sys.exit()
+
         # Construct the final HTML resume from the results
-        full_resume = (
-            f"<body>\n"
-            f"  {results['header']}\n"
-            f"  <main>\n"
-            f"    {results['education']}\n"
-            f"    {results['work_experience']}\n"
-            f"    {results['side_projects']}\n"
-            f"    {results['achievements']}\n"
-            f"    {results['additional_skills']}\n"
-            f"  </main>\n"
-            f"</body>"
-        )
+
+#        full_resume = (
+#            f"<body>\n"
+#            f"  {results['header']}\n"
+#            f"  <main>\n"
+#            f"    {results['education']}\n"
+#            f"    {results['work_experience']}\n"
+#            f"    {results['side_projects']}\n"
+#            f"    {results['achievements']}\n"
+#            f"    {results['additional_skills']}\n"
+#            f"  </main>\n"
+#            f"</body>"
+ #       )
+
+        def create_filename():
+            # Get the current time
+            now = datetime.now()
+            # Format the time as YYYYMMDD.hh.mm.sss
+            formatted_time = now.strftime("%Y%m%d.%H.%M.%f")[:-3]  # Trim the last 3 digits for milliseconds
+            # Create the file name
+            file_name = f"final_resume.{formatted_time}"
+            return file_name
+
+        fname_full = os.path.join(os.path.dirname(__file__),'resume_output', create_filename())
+        print(f'constructed final html resume. Saving to the file: {fname_full}')
+        try:
+            # Save the file with the generated filename
+            with open(fname_full, 'w') as file:
+                file.write(full_resume)
+        except Exception as e:
+            print(f"Error during saving html file: {fname_full}"
+                      f"error: {e}")
 
         return full_resume
