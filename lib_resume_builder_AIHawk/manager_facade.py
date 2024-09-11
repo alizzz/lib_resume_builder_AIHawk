@@ -63,10 +63,10 @@ class FacadeManager:
 
     def pdf_base64(self, job_description_url=None, job_description_text=None):
         if (job_description_url is not None and job_description_text is not None):
-            raise ValueError("Esattamente uno tra 'job_description_url' o 'job_description_text' deve essere fornito.")
+            raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
         
         if self.selected_style is None:
-            raise ValueError("Devi scegliere uno stile prima di generare il PDF.")
+            raise ValueError("You must choose a style before generating the PDF.")
         
         style_path = self.style_manager.get_style_path(self.selected_style)
 

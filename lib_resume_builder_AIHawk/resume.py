@@ -15,6 +15,8 @@ class PersonalInformation(BaseModel):
     email: Optional[EmailStr]
     github: Optional[HttpUrl]
     linkedin: Optional[HttpUrl]
+    years_technical_experience: Optional[str]
+    years_mgmt_experience: Optional[str]
 
 class EducationDetails(BaseModel):
     degree: Optional[str]
@@ -30,7 +32,8 @@ class ExperienceDetails(BaseModel):
     employment_period: Optional[str]
     location: Optional[str]
     industry: Optional[str]
-    key_responsibilities: Optional[List[Dict[str, str]]]
+    summary: Optional[str]
+    key_responsibilities: Optional[List[str]]
     skills_acquired: Optional[List[str]]
 
 class Project(BaseModel):
@@ -69,6 +72,16 @@ class LegalAuthorization(BaseModel):
     legally_allowed_to_work_in_us: Optional[str]  # Added field
     requires_eu_sponsorship: Optional[str]
 
+class ResumeRawHtml(BaseModel):
+    name_header: Optional[str]
+    career_timeline: Optional[str]
+    education_summary: Optional[str]
+    career_summary: Optional[str]
+
+class Skill(BaseModel):
+    category: Optional[str]
+    skill_lst: Optional[str]
+
 class Resume(BaseModel):
     personal_information: Optional[PersonalInformation]
     education_details: Optional[List[EducationDetails]]
@@ -82,7 +95,9 @@ class Resume(BaseModel):
     salary_expectations: Optional[SalaryExpectations]
     self_identification: Optional[SelfIdentification]
     legal_authorization: Optional[LegalAuthorization]
-    
+    resume_raw_html: Optional[ResumeRawHtml]
+    skills: Optional[List[Skill]]
+
     @staticmethod
     def normalize_exam_format(exam):
         if isinstance(exam, dict):
@@ -103,6 +118,7 @@ class Resume(BaseModel):
 
             # Create an instance of Resume from the parsed data
             super().__init__(**data)
+            print(f'Resume __init__ completed')
         except yaml.YAMLError as e:
             raise ValueError("Error parsing YAML file.") from e
         except Exception as e:

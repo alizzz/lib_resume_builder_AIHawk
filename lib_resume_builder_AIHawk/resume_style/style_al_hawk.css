@@ -16,9 +16,9 @@ p.subsection-header {
     margin-top: 0.08in; margin-bottom: 0in
 }
 h2 {
-    font-family: Garamond,serif; font-size: 12pt; font-weight: bold;
+    font-family: Garamond,serif; font-size: 14pt; font-weight: bold;
     line-height: 115%; orphans: 2; widows: 2;
-    margin-top: 0.08in; margin-bottom: 0in
+    margin-top: 0.15in; margin-bottom: 0in
 }
 p.western { font-family: "Calibri", serif; font-size: 11pt; so-language: en-US }
 p.cjk { font-family: "Calibri"; font-size: 11pt; so-language: en-US }
@@ -39,21 +39,45 @@ table {font-family: Garamond, serif; font-size: 10pt; font-weight: normal; font-
     line-height: 115%; orphans: 2; widows: 2; margin-top: 0.08in; margin-bottom: 0in
 .education-summary{
     font-family: Garamond, serif; font-size: 10pt;
-    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent; page-break-before: auto
+    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent;
 }
 .education{
     font-family: Garamond, serif; font-size: 10pt;
-    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent; page-break-before: auto
+    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent;
 }
 .achievements{
     font-family: Garamond, serif; font-size: 10pt;
-    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent; page-break-before: auto
+    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent;
 }
 .skills{
     font-family: Garamond, serif; font-size: 10pt;
-    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent; page-break-before: auto
+    line-height: 100%; orphans: 2; widows: 2; margin-bottom: 0in; background: transparent;
 }
 .prof-exp-details{
     margin-bottom: 0in;
     font-family:Garamond, serif; font-size:10pt
+
+.page-break {
+    page-break-after: always;
+}
+
+.compact-list {
+    margin: 0;
+    padding-left: 15px;
+}
+
+@media print {
+  .page-break{
+     clear: both;
+     page-break-after: always
+  }
+  .no-print {
+  display: none;
+  }
+  body {
+    padding: 0;
+    margin: 0;
+    font-size: 9pt;
+    background-color: #fff;
+  }
 }

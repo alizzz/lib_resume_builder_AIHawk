@@ -16,9 +16,18 @@ class ResumeGenerator:
     def _create_resume(self, gpt_answerer: Any, style_path, temp_html_path):
         gpt_answerer.set_resume(self.resume_object)
         template = Template(global_config.html_template)
+        css = ""
+        #try:
+        #    with (open(style_path, 'r')) as style_file:
+        #        css = style_file.read()
+        #except Exception as e:
+        #    print(f"Error during reading style file: {style_path}"
+        #        f"error: {e}")
+
         message = template.substitute(markdown=gpt_answerer.generate_html_resume(), style_path=style_path)
         with open(temp_html_path, 'w', encoding='utf-8') as temp_file:
             temp_file.write(message)
+            print(f'Written temp html file: {temp_html_path}')
 
     def create_resume(self, style_path, temp_html_file):
         strings = load_module(global_config.STRINGS_MODULE_RESUME_PATH, global_config.STRINGS_MODULE_NAME)

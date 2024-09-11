@@ -24,12 +24,12 @@ def HTML_to_PDF(FilePath):
         pdf_base64 = driver.execute_cdp_cmd("Page.printToPDF", {
             "printBackground": True,         # Include lo sfondo nella stampa
             "landscape": False,              # Stampa in verticale (False per ritratto)
-            "paperWidth": 8.27,              # Larghezza del foglio in pollici (A4)
-            "paperHeight": 11.69,            # Altezza del foglio in pollici (A4)
-            "marginTop": 0.8,                # Margine superiore in pollici (circa 2 cm)
-            "marginBottom": 0.8,             # Margine inferiore in pollici (circa 2 cm)
-            "marginLeft": 0.8,               # Margine sinistro in pollici (circa 2 cm)
-            "marginRight": 0.8,              # Margine destro in pollici (circa 2 cm)
+            "paperWidth": 8,              # Larghezza del foglio in pollici (A4)
+            "paperHeight": 11,            # Altezza del foglio in pollici (A4)
+            "marginTop": 0.5,                # Margine superiore in pollici (circa 2 cm)
+            "marginBottom": 0.5,             # Margine inferiore in pollici (circa 2 cm)
+            "marginLeft": 0.3,               # Margine sinistro in pollici (circa 2 cm)
+            "marginRight": 0.3,              # Margine destro in pollici (circa 2 cm)
             "displayHeaderFooter": False,   # Non visualizzare intestazioni e piè di pagina
             "preferCSSPageSize": True,       # Preferire le dimensioni della pagina CSS
             "generateDocumentOutline": False, # Non generare un sommario del documento
