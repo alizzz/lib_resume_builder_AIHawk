@@ -245,6 +245,28 @@ Ensure that the achievements are clearly presented and effectively highlight you
 The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
 """
 
+prompt_professional_experience_role_summary = """
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives. 
+Your task is to summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns with the provided job description, applicant's experience, applicant's skills, and the job title. 
+Ensure that the created work experience summary builds on top of relevant applicant's experience and aligns well with the job description. Be specific and relevant to this position. 
+For example, it may say: "In this role I was tasked with building new machine learning platform, leading and growing the team of data science engineers"
+It will involve a thorough and deep analysis of job description, aplicant's experience, and customary responsibility of the job title. 
+Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one sentence. 
+Output just the summary and nothing else. 
+
+**Job Description:**
+{job_desc}
+
+**Applicant's Work Experience:**
+{work_experience}
+
+**Job Title:**
+{position_title}
+
+**Applicant's Skills**
+{skills}
+"""
+
 prompt_additional_skills = """
 Act as an HR expert and resume writer with a specialization in creating ATS-friendly resumes. 
 Your task is to list skills relevant to the job based on the provided job description. For each skill, ensure you include:

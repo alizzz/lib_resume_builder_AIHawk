@@ -264,6 +264,21 @@ class LLMResumeJobDescription:
         })
         return output
 
+    def generate_work_experience_section_summary_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
+        work_experience_summary_prompt_template = self._preprocess_template_string(
+            self.strings.prompt_professional_experience_role_summary
+        )
+        prompt = ChatPromptTemplate.from_template(work_experience_summary_prompt_template)
+        chain = prompt | self.llm_cheap | StrOutputParser()
+        raw_output = chain.invoke({
+            "job_desc": job_desc,
+            "work_experience": work_experience,
+            "position_title": position_title,
+            "skills": skills
+        })
+        output = clean_html_string(raw_output)
+        return output
+
     def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
         work_experience_prompt_template = self._preprocess_template_string(
             self.strings.prompt_work_experience
@@ -529,8 +544,30 @@ class LLMResumeJobDescription:
         return output
 
     def generate_professional_experience_ai(self):
+
         raw_html = "<div>"
         for exp in self.resume_.experience_details:
+            skills=""
+            key_resp = ""
+            try:
+                if exp.summary is not None:
+                    key_resp+=exp.summary + '/n'
+
+                if exp.key_responsibilities is not None:
+                    key_resp = ('\n').join(exp.key_responsibilities)
+            except Exception as e:
+                printcolor(f"Exception while processing key responsibiity for {exp.company}:{exp.position}. Exception: {e}")
+
+            try:
+                if exp.skills_acquired is not None:
+                    skills += '\n'.join(exp.skills_acquired)
+
+                if self.resume_.skills is not None:
+                    for s in self.resume_.skills:
+                        skills+=s.skill_lst
+            except Exception as e:
+                printcolor(f"Exception while processing skills for {exp.company}:{exp.position}. Exception: {e}")
+
             # --- Position Header
             raw_html += f"""<div>
                         <table width="720" cellpadding="0" cellspacing="0">
@@ -546,27 +583,19 @@ class LLMResumeJobDescription:
                         </table>"""
             # --- Position summary ---#
             try:
-                raw_html += f"""<div align="justify" class="prof-exp-details">{exp.summary}</div>"""
-            except Exception as e:
-                print(f'Experience summary is not set for {exp.position} for {exp.company}')
+                try:
+                    exp_summary_ai = self.generate_work_experience_section_summary_ai(
+                        work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description
+                    )
+                    if exp_summary_ai is not None and len(exp_summary_ai)>0:
+                        raw_html+= f"""<div align="justify" class="prof-exp-details">{exp_summary_ai}</div>"""
+                except Exception as e:
+                    raw_html += f"""<div align="justify" class="prof-exp-details">{exp.summary}</div>"""
+                    printcolor(f'Experience section summary thrown an exception for {exp.position} for {exp.company}. Exception {e}', "yellow")
 
-            # --- Position responsibilities ---#
-            skills=""
-            key_resp = ""
-            try:
-
-                if exp.key_responsibilities is not None:
-                    key_resp = ('\n').join(exp.key_responsibilities)
-
-                if exp.skills_acquired is not None:
-                    skills += '\n'.join(exp.skills_acquired)
-
-                if self.resume_.skills is not None:
-                    for s in self.resume_.skills:
-                        skills+=s.skill_lst
-
+                # --- Position responsibilities ---#
                 responsibility_html = self.generate_work_experience_section_ai(
-                    work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description)
+                        work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description)
 
                 if len(responsibility_html) > 0:
                     raw_html += f"""<div><ul>{responsibility_html}</ul></div>"""
