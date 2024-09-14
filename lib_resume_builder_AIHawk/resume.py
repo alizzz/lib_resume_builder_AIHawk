@@ -72,12 +72,6 @@ class LegalAuthorization(BaseModel):
     legally_allowed_to_work_in_us: Optional[str]  # Added field
     requires_eu_sponsorship: Optional[str]
 
-class ResumeRawHtml(BaseModel):
-    name_header: Optional[str]
-    career_timeline: Optional[str]
-    education_summary: Optional[str]
-    career_summary: Optional[str]
-
 class Skill(BaseModel):
     category: Optional[str]
     skill_lst: Optional[str]
@@ -95,7 +89,6 @@ class Resume(BaseModel):
     salary_expectations: Optional[SalaryExpectations]
     self_identification: Optional[SelfIdentification]
     legal_authorization: Optional[LegalAuthorization]
-    resume_raw_html: Optional[ResumeRawHtml]
     skills: Optional[List[Skill]]
 
     @staticmethod

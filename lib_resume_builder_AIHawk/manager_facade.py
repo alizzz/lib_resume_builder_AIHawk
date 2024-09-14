@@ -60,8 +60,39 @@ class FacadeManager:
             self.selected_style = selected_choice.split(' (')[0]
             print("\nSelected style: "+self.selected_style)
 
+    def pdf_base64(self, job_description_url=None, job_description_text=None, html_file_name=None, delete_html_file=True):
+        if (job_description_url is not None and job_description_text is not None):
+            raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
 
-    def pdf_base64(self, job_description_url=None, job_description_text=None):
+        if self.selected_style is None:
+            raise ValueError("You must choose a style before generating the PDF.")
+
+        style_path = self.style_manager.get_style_path(self.selected_style)
+
+        temp_html_file = None
+        if html_file_name is None: #create temp file
+            with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.html', encoding='utf-8') as temp_html_file:
+                html_file_name = temp_html_file.name
+
+        if job_description_url is None and job_description_text is None:
+            self.resume_generator.create_resume(style_path, html_file_name)
+        elif job_description_url is not None and job_description_text is None:
+            self.resume_generator.create_resume_job_description_url(style_path, job_description_url, html_file_name)
+        elif job_description_url is None and job_description_text is not None:
+            self.resume_generator.create_resume_job_description_text(style_path, job_description_text, html_file_name)
+        else:
+                return None
+        pdf_base64 = HTML_to_PDF(html_file_name)
+        if delete_html_file:
+            os.remove(html_file_name)
+        if temp_html_file is not None:
+            temp_html_file.close()
+
+        return pdf_base64
+
+
+    #original version
+    def _pdf_base64(self, job_description_url=None, job_description_text=None):
         if (job_description_url is not None and job_description_text is not None):
             raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
         

@@ -414,4 +414,3 @@ Output only positions in a comma-delimited string, ordered from L0 to L3, where 
 **Job Description**
 {job_description}
 """
-

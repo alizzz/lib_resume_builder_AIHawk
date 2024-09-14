@@ -215,7 +215,9 @@ class LLMResumeJobDescription:
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({"text": job_description_text})
         self.job_description = output
-    
+
+
+
     def _generate_header_gpt(self) -> str:
         header_prompt_template = self._preprocess_template_string(
             self.strings.prompt_header
@@ -389,13 +391,6 @@ class LLMResumeJobDescription:
     #generate static header based on applicant information
     #ToDo: load from configuration
     def generate_applicant_name_header(self):
-    #       applicant = {
-    #       name:"Alexander",
-    #       surname:"Liss",
-    #       suffix:", PhD, MBA",
-    #       phone:"(646) 867 0808",
-    #       email:"hawk@talkdirect.net"
-     #   }
         output = f'<span style="font-variant: small-caps"><b>{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</b></span> • {self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone} • {self.resume_.personal_information.email}'
         return output
 
