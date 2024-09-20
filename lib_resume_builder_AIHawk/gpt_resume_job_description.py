@@ -513,7 +513,7 @@ class LLMResumeJobDescription:
         return output
 
     def generate_education_summary(self):
-        print("in generate_education_summary")
+        #print("in generate_education_summary")
         edu_timeline_html = '<ul class="education-summary">'
         for edu in self.resume_.education_details:
             edu_timeline_html += f'<li><p align="justify"><b>{edu.degree}</b>,<i> {edu.field_of_study}</i> {edu.university}</p></li>'
@@ -522,7 +522,7 @@ class LLMResumeJobDescription:
         return output
 
     def generate_language_skills_section(self):
-        print("in generate_language_skills_section")
+        #print("in generate_language_skills_section")
         edu_timeline_html = '<ul class="skills">'
         if self.resume_.languages is None or len(self.resume_.languages)==0:
             return clean_html_string(f'{edu_timeline_html}<li><b>"English</b>:Native</li></ul>')
