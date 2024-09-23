@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 #from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 import lib_resume_builder_AIHawk.resume_templates.resume_template
-from src.utils import printcolor
+from utils import printcolor
 import os
 import os.path
 import sys
