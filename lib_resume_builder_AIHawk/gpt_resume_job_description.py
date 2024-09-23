@@ -417,7 +417,8 @@ class LLMResumeJobDescription:
         })
 
         output = [position.strip() for position in hierarchy_string.split(',')]
-        print(f'generated position hierarchy {','.join(output)}')
+        output_str = ','.join(output)
+        print(f"generated position hierarchy {output_str}")
         return output
 
     def update_positions_automl(self):

@@ -241,11 +241,19 @@ Act as an HR expert and resume writer with a specialization in creating ATS-frie
     </div>
 </section>
 ```
-The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
+The results should be provided in html format, 
+Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
 """
 prompt_career_summary="""
 Act as an HR expert and resume writer with a specialization in creating ATS-friendly resumes. 
-Your task is to update the aplicant's career summary below and make it clearly reflecting the job requirements. Make it very attractive to the hiring manager
+Your task is to update the aplicant's career summary below and make it clearly reflecting the job requirements. 
+Make it very attractive to the hiring manager, try to cover as many as possible requirements and skills from job description. 
+Create two paragraphs. 
+The first paragraph should cover primarily technical proficiency. 
+The second paragraph should demonstrate business acumen, superior leadership and team managament abilities. 
+Make it easily readeable and nicely flowing. 
+It should be clear for any readers who is familiar with job requirements that candidate is an exceptional fit for that position.
+Highlight the most important parts.  
 
 #career summary
 {career_summary}
@@ -253,5 +261,6 @@ Your task is to update the aplicant's career summary below and make it clearly r
 #job requirements:
 {job requirements}
 
-The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
+The results should be provided in html format, 
+Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
 """
