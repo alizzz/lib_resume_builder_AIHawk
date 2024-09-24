@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 #from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 import lib_resume_builder_AIHawk.resume_templates.resume_template
-from utils import printcolor
+from src.utils import printcolor
 import os
 import os.path
 import sys
@@ -139,6 +139,7 @@ class LoggerChatModel:
 class LLMResumeJobDescription:
     def __init__(self, openai_api_key, strings):
         self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
+        self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
         self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.strings = strings
         self.pos_hierarchy_list = None
@@ -256,7 +257,7 @@ class LLMResumeJobDescription:
         )
 
         prompt = ChatPromptTemplate.from_template(career_summary_prompt_template)
-        chain = prompt | self.llm_cheap | StrOutputParser()
+        chain = prompt | self.llm_good | StrOutputParser()
         output = chain.invoke({
             "education_summary": self.resume_.education_details,
             "job_description": self.job_description,
@@ -709,6 +710,14 @@ class LLMResumeJobDescription:
 
         def position_hierarchy_fn():
             return self.position_hierarchy_ai()
+        def create_filename():
+            # Get the current time
+            now = datetime.now()
+            # Format the time as YYYYMMDD.hh.mm.sss
+            formatted_time = now.strftime("%Y%m%d.%H.%M.%f")[:-3]  # Trim the last 3 digits for milliseconds
+            # Create the file name
+            file_name = f"finalresume.{formatted_time}"
+            return file_name
 
         # Create a dictionary to map the function names to their respective callables
         functions = {
@@ -726,15 +735,6 @@ class LLMResumeJobDescription:
             "footer":footer_fn
         }
 
-
-#        "header": header_fn,
-#            "education": education_fn,
-#            "work_experience": work_experience_fn,
-#            "side_projects": side_projects_fn,
-#            "achievements": achievements_fn,
-#            "additional_skills": additional_skills_fn
-#       }
-#
         # Use ThreadPoolExecutor to run the functions in parallel
         with ThreadPoolExecutor() as executor:
             future_to_section = {executor.submit(fn): section for section, fn in functions.items()}
@@ -792,21 +792,11 @@ class LLMResumeJobDescription:
 #            f"  </main>\n"
 #            f"</body>"
  #       )
-
-        def create_filename():
-            # Get the current time
-            now = datetime.now()
-            # Format the time as YYYYMMDD.hh.mm.sss
-            formatted_time = now.strftime("%Y%m%d.%H.%M.%f")[:-3]  # Trim the last 3 digits for milliseconds
-            # Create the file name
-            file_name = f"finalresume.{formatted_time}"
-            return file_name
-
         fname_full = os.path.join(os.path.dirname(__file__),'resume_output', create_filename())
         print(f'constructed final html resume. Saving to the file: {fname_full}')
         try:
             # Save the file with the generated filename
-            with open(fname_full, 'w') as file:
+            with open(fname_full, 'w', encoding='utf-8') as file:
                 file.write(fullresume)
         except Exception as e:
             print(f"Error during saving html file: {fname_full}"
