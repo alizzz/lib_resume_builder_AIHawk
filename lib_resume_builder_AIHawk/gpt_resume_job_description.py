@@ -392,7 +392,7 @@ class LLMResumeJobDescription:
     #generate static header based on applicant information
     #ToDo: load from configuration
     def generate_applicant_name_header(self):
-        output = f'<span style="font-variant: small-caps"><b>{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</b></span> • {self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone} • {self.resume_.personal_information.email}'
+        output = f'<span style="applicant_name_header">{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</span> • {self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone} • {self.resume_.personal_information.email}'
         return output
 
     #generate title based on position name
@@ -573,10 +573,10 @@ class LLMResumeJobDescription:
                             <col width="100"/>
                             <col width="75"/>
                             <tr>
-                                <td align="left"><b><i>{exp.company}</i></b></td>
-                                <td align="left"><b>{exp.position}</b></td>
-                                <td align="right">{exp.location}</td>
-                                <td align="right">{exp.employment_period}</td>
+                                <td align="left" class="company_name_employment_history">{exp.company}</td>
+                                <td align="left" class="position_employment_history">{exp.position}</td>
+                                <td align="right class="location_employment_history">{exp.location}</td>
+                                <td align="right class="employment_period_employment_history">{exp.employment_period}</td>
                         </table>"""
             # --- Position summary ---#
             try:
@@ -618,10 +618,10 @@ class LLMResumeJobDescription:
                     <col width="100"/>
                     <col width="75"/>
                     <tr>
-                        <td align="left"><b><i>{exp.company}</i></b></td>
-                        <td align="left"><b>{exp.position}</b></td>
-                        <td align="right">{exp.location}</td>
-                        <td align="right">{exp.employment_period}</td>
+                        <td align="left" class="company_name_employment_history_summary">{exp.company}</td>
+                        <td align="left" class="position_employment_history_summary>{exp.position}</td>
+                        <td align="right class="location_employment_history">{exp.location}</td>
+                        <td align="right class="employment_period_employment_history">{exp.employment_period}</td>
                 </table>"""
             #--- Position summary ---#
             try:
