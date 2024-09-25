@@ -5,9 +5,11 @@ You are an expert resume writer. Using the applicant's resume information, and t
 ** Output Template to use **
 <div>
     <p align="left" class="career-summary">
-       I am a seasoned [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader']. 
-       I [include what you do for the employer, relevant for the job description, for example, 'I build teams and deliver innovative products that disrupt markets'].
-       During my career [include one or two most important achievements, directly relevant for the job description]  
+       I am a [seasoned|knowledgeable|skilled|proficient] [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader']. 
+       I [include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'].
+       During my career [include one or two most important achievements, directly relevant for the job description]
+    <p align="left" class="career-summary">[Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]  
+    <p align="left" class="career-summary">[Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]  
     <p><strong>Years of Technical Experience: </strong>[Insert total years of technical experience related to the job and a brief description of the experience aligned with the job description]</p>
     <p><strong>Years of Leadership Experience: </strong>[Insert total years of leadership and management experience related to the job]</p>
     <p><strong>Contributions:</strong>[Highlight key areas where applicant can contribute to the organzation success by considering the job description]</p>
