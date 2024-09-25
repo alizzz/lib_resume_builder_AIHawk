@@ -8,7 +8,7 @@ from lib_resume_builder_AIHawk.utils import HTML_to_PDF
 import webbrowser
 
 class FacadeManager:
-    def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path):
+    def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path, selected_style = None):
         # Ottieni il percorso assoluto della directory della libreria
         lib_directory = Path(__file__).resolve().parent
         global_config.STRINGS_MODULE_RESUME_PATH = lib_directory / "resume_prompt/strings_feder-cr.py"
@@ -21,7 +21,7 @@ class FacadeManager:
         self.style_manager.set_styles_directory(global_config.STYLES_DIRECTORY)
         self.resume_generator = resume_generator
         self.resume_generator.set_resume_object(resume_object)
-        self.selected_style = None  # Proprietà per memorizzare lo stile selezionato
+        self.selected_style = selected_style  # Proprietà per memorizzare lo stile selezionato
 
     def prompt_user(self, choices: list[str], message: str) -> str:
         questions = [
