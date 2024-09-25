@@ -6,6 +6,7 @@ from lib_resume_builder_AIHawk.gpt_resume_job_description import LLMResumeJobDes
 from lib_resume_builder_AIHawk.module_loader import load_module
 from lib_resume_builder_AIHawk.config import global_config
 import os
+import re
 
 class ResumeGenerator:
     def __init__(self):
@@ -14,7 +15,7 @@ class ResumeGenerator:
     def set_resume_object(self, resume_object):
          self.resume_object = resume_object
 
-    def _create_resume(self, gpt_answerer: Any, style_path, temp_html_path):
+    def _create_resume(self, gpt_answerer: Any, style_path, temp_html_path, css_inline=True):
         gpt_answerer.set_resume(self.resume_object)
         template = Template(global_config.html_template)
         css = ""
@@ -23,9 +24,20 @@ class ResumeGenerator:
         #        css = style_file.read()
         #except Exception as e:
         #    print(f"Error during reading style file: {style_path}"
-        #        f"error: {e}")
+        #        f"error: {e}")style_path
+        style = f'<link rel="stylesheet" href="{style_path}" />'
+        if css_inline:
+            try:
+                with open(style_path,'r') as css:
+                    css_content = css.read()
+                    # Remove content between /* and */ at the beginning of the CSS file
+                    css_content = re.sub(string=css_content, pattern=r'/\*.*?\*/',  repl='', flags=re.DOTALL)
+                    style = f'<style>{css_content}</style>'
+            except Exception as e:
+                print(f"Failed reading css file {style_path}. Error {e}")
 
-        message = template.substitute(markdown=gpt_answerer.generate_html_resume(), style_path=style_path)
+        html_body = gpt_answerer.generate_html_resume()
+        message = template.substitute(body=html_body, inline_css=style)
         bak_directory = os.path.dirname(temp_html_path)
         if not os.path.exists(bak_directory):
             os.makedirs(bak_directory)

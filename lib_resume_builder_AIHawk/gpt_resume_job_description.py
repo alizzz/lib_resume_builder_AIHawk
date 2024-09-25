@@ -32,7 +32,7 @@ import sys
 load_dotenv()
 #ToDo: make it read config file
 template_file = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_template.html')
-css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_al_hawk.css')
+css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_hawk.css')
 fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
 
 #removes \n and multiple spaces from a string
