@@ -190,6 +190,7 @@ class LLMResumeJobDescription:
             """,
             input_variables=["question", "context"]
         )
+
         def format_docs(docs):
             return "\n\n".join(doc.page_content for doc in docs)
         context_formatter = vectorstore.as_retriever() | format_docs
@@ -211,13 +212,11 @@ class LLMResumeJobDescription:
         self.job_description = result
         print(f'Job description:\n{result}')
 
-    def set_job_description_from_text(self, job_description_text):
+    def set_job_description_from_text(self, job_description_text: object) -> object:
         prompt = ChatPromptTemplate.from_template(self.strings.summarize_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({"text": job_description_text})
         self.job_description = output
-
-
 
     def _generate_header_gpt(self) -> str:
         header_prompt_template = self._preprocess_template_string(
@@ -575,8 +574,8 @@ class LLMResumeJobDescription:
                             <tr>
                                 <td align="left" class="company_name_employment_history">{exp.company}</td>
                                 <td align="left" class="position_employment_history">{exp.position}</td>
-                                <td align="right class="location_employment_history">{exp.location}</td>
-                                <td align="right class="employment_period_employment_history">{exp.employment_period}</td>
+                                <td align="right" class="location_employment_history">{exp.location}</td>
+                                <td align="right" class="employment_period_employment_history">{exp.employment_period}</td>
                         </table>"""
             # --- Position summary ---#
             try:
@@ -620,8 +619,8 @@ class LLMResumeJobDescription:
                     <tr>
                         <td align="left" class="company_name_employment_history_summary">{exp.company}</td>
                         <td align="left" class="position_employment_history_summary>{exp.position}</td>
-                        <td align="right class="location_employment_history">{exp.location}</td>
-                        <td align="right class="employment_period_employment_history">{exp.employment_period}</td>
+                        <td align="right" class="location_employment_history">{exp.location}</td>
+                        <td align="right" class="employment_period_employment_history">{exp.employment_period}</td>
                 </table>"""
             #--- Position summary ---#
             try:
