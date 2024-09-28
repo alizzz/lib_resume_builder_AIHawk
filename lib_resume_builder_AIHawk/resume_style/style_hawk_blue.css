@@ -1,17 +1,63 @@
 /*Hawk - Modern Blue$AL-Blue*/
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-.header {
-    font-family: "Garamond", serif; font-size: 12pt; font-variant: normal; font-weight: normal;
-    line-height: 100%; margin-bottom: 0in;
-    border-top: none; border-bottom: 4.00pt double #3498db; border-left: none; border-right: none;
-    padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in
-}
 .career-summary {
     font-family: "Garamond", serif; font-size: 11pt;
     line-height: 115%; orphans: 2; widows: 2;
     margin-top: 0.05in; margin-bottom: 0in
 }
-span.applicant_name_header{ font-variant: small-caps; font-weight: bold; font-size: 20pt }
+
+#header{
+    width: 100%;
+    border-collapse: collapse;
+    border-top: none; border-bottom: 3.00pt double #3498db; border-left: none; border-right: none;
+}
+#header table{
+    width:100%
+}
+.professional_experience_item table{
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.exp_details_company{
+    font-variant: small-caps;
+    font-weight: bold;
+    font-style: italic;
+    text-align: left;
+    padding-left: 10px;
+
+}
+.exp_details_industry{
+    font-style: italic;
+    text-align: left;
+    padding-left: 10px;
+}
+.exp_details_position{
+    font-weight: bold;
+    text-align: left;
+    padding-left: 10px;
+}
+.exp_details_location {
+    text-align: right;
+    padding-right: 10px;
+}
+.exp_details_period {
+    text-align: right;
+    padding-right: 10px;
+}
+
+.left-aligned-column{
+    text-align: left;
+    padding-left: 10px;
+}
+.right-aligned-column {
+    text-align: right;
+    padding-right: 10px;
+}
+span.applicant_name_header{
+    font-family: "Garamond", serif; font-size: 11pt;
+    font-variant: small-caps; font-weight: bold; font-size: 20pt
+}
 span.phone{
     font-family: 'Poppins', sans-serif;
     font-variant: small-caps;
@@ -19,6 +65,8 @@ span.phone{
     font-size: 10pt
 }
 span.email{ color: #0000f0; font-weight: normal; font-size: 12pt }
+span.degree{ font-weight: bold; font-variant: small-caps;}
+span.ed_industry{ font-style: italic;}
 
 body {
   font-family: 'Poppins', sans-serif;
@@ -30,65 +78,35 @@ body {
   font-size: 10pt;
   background-color: #f9f9f9;
 }
-h1 {font-family: "Garamond", serif; font-variant: small-caps;
+
+h1 {
+    font-family: "Garamond", serif; font-variant: small-caps;
     font-size: 16pt;
     font-weight: 700;
     text-transform: uppercase; color: #000000;
     letter-spacing: 1.5pt; line-height: 100%; text-align: center;
     page-break-inside: avoid;
     orphans: 2; widows: 2;
-    margin-top: 0.05in; margin-bottom: 0in;
+    margin-top: 0.2in; margin-bottom: 0in;
     border-top: 1.50pt solid color: #2c3e50;; border-bottom: none; border-left: none; border-right: none;
-    padding-top: 0.01in; padding-bottom: 0in; padding-left: 0in; padding-right: 0in;
-    direction: ltr; background: transparent }
-
-header {
-  text-align: center;
-  margin-bottom: 0px;
-  background-color: #3498db;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.contact-info {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 15px;
-  font-size: 10pt;
-  font-weight: 300;
-  color: #ecf0f1;
-}
-
-.contact-info p {
-  margin: 0;
-}
-
-.contact-info a {
-  color: #ecf0f1;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.contact-info a:hover {
-  color: #2c3e50;
-}
-
-.fab,
-.fas {
-  margin-right: 5px;
-}
+    padding-top: 0.1in; padding-bottom: 0in; padding-left: 0in; padding-right: 0in;
+    direction: ltr; background: transparent
+ }
 
 h2 {
   font-size: 14pt;
   font-weight: 600;
-  border-bottom: 2px solid #3498db;
+  border-top: 2px solid #3498db;
   padding-bottom: 0px;
   margin: 15px 0 0px 0;
   color: #2c3e50;
 }
 
+
+.fab,
+.fas {
+  margin-right: 5px;
+}
 .entry {
   margin-bottom: 15px;
   background-color: #fff;
@@ -96,14 +114,6 @@ h2 {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
-.entry-header {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-  color: #3498db;
-}
-
 .entry-details {
   display: flex;
   justify-content: space-between;
@@ -112,7 +122,6 @@ h2 {
   font-size: 9pt;
   color: #7f8c8d;
 }
-
 .compact-list {
   margin: 5px 0;
   padding-left: 20px;
@@ -122,10 +131,11 @@ h2 {
   margin-bottom: 5px;
 }
 
+
 .two-column {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  flex: 1
+  padding: 20px;
+  margin: 10px;
 }
 
 .two-column ul {
@@ -145,26 +155,69 @@ a:hover {
   text-decoration: underline;
 }
 
-@page {
-    size: 8.5in 11in;
-    margin-left: 0.5in;
-    margin-right: 0.5in;
-    margin-top: 0.5in;
-    margin-bottom: 0.1in
+.position-history-table{
+    width: 850px;         /* Set table width */
+    border-collapse: collapse;  /* Equivalent to cellspacing="0" */
+    padding: 0;
+}
+h2.summary-title{
+    margin-top: 5px
 }
 
 @media print {
-  .page-break{
-     clear: both;
-     page-break-after: always
-  }
-  .no-print {
-  display: none
-  }
   body {
     padding: 0;
     margin: 0;
     font-size: 9pt;
-    background-color: #fff
+    background-color: #fff;
+    margin: 0
+    margin-top: 10px
+    margin-bottom: 10px */
   }
+  .page-break{
+     clear: both;
+     page-break-after: always;
+  }
+/*
+    .print-page::before {
+        content: '';
+        height: 100px;
+        margin-bottom: 10px;
+        margin-top: 10px
+    }
+    #experience-content {
+        display: table;
+        table-layout: fixed;
+        positon: fixed;
+        top: 10px;
+        left: 0px
+        padding-top: 20px;
+        padding-bottom: 20px;
+        width: 94%;
+        height: auto;
+    }
+
+    .header table{
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 850px;
+        margin: 0px auto;
+        border-collapse: collapse;
+        border-top: none; border-bottom: 3.00pt double #3498db; border-left: none; border-right: none;
+    }
+*/
+   h2{
+    margin-top: 45px
+  }
+    /* Ensure the header doesn't overlap content */
+    #content {
+       margin-top: 10px; /* Adjust based on header height */
+    }
+
+  @page {
+    margin-lef: 0.5in;margin-right: 0.5 in; margin-bottom: 0.25in; margin-top: 0.1in
+  }
+
 }

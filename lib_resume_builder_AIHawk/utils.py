@@ -1,5 +1,7 @@
 import os
 import time
+import traceback
+
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium import webdriver
@@ -71,6 +73,19 @@ def get_chrome_browser_options():
 
     options.add_argument("--single-process")  # Esegui Chrome in un solo processo
     return options
+
+def read_format_string(file)->str:
+    fmt = ''
+    try:
+        with open(file, 'r', encoding='utf-8') as f:
+           fmt = f.read()
+    except FileNotFoundError as e:
+        printred(f'EXCEPTION in read_format_string - FileNotFound: {file} ')
+        printred(traceback.format_exc())
+    except Exception as e:
+        printred(printred(f'EXCEPTION in read_format_string - FileNotFound: {file}. Error {e}'))
+        raise e
+    return fmt
 
 def printred(text):
     RED = "\033[91m"

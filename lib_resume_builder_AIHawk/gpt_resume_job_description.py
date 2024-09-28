@@ -1,10 +1,16 @@
 import json
 import os
+import random
 import tempfile
 import textwrap
 import time
 import re
 import copy
+import os
+import os.path
+import sys
+import traceback
+import inspect
 from datetime import datetime
 from typing import Dict, List
 from langchain_community.document_loaders import TextLoader
@@ -17,21 +23,17 @@ from langchain_openai import ChatOpenAI
 from langchain_text_splitters import TokenTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from lib_resume_builder_AIHawk.config import global_config
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 #from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 import lib_resume_builder_AIHawk.resume_templates.resume_template
-from src.utils import printcolor
-import os
-import os.path
-import sys
-
-
+from lib_resume_builder_AIHawk.utils import printcolor, printred, printyellow, read_format_string
+from lib_resume_builder_AIHawk.config import global_config
 
 load_dotenv()
 #ToDo: make it read config file
-template_file = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_template.html')
+
+template_file = os.path.join(os.path.dirname(__file__), 'resume_templates', os.environ.get('RESUME_TEMPLATE','hawk_resume_template.html'))
 css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_hawk.css')
 fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
 
@@ -212,6 +214,7 @@ class LLMResumeJobDescription:
         self.job_description = result
         print(f'Job description:\n{result}')
 
+
     def set_job_description_from_text(self, job_description_text: object) -> object:
         prompt = ChatPromptTemplate.from_template(self.strings.summarize_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
@@ -281,17 +284,18 @@ class LLMResumeJobDescription:
         output = clean_html_string(raw_output)
         return output
 
-    def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
+    def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="", n_lines = random.choice([3,4,5])) -> str:
         work_experience_prompt_template = self._preprocess_template_string(
             self.strings.prompt_work_experience
         )
         prompt = ChatPromptTemplate.from_template(work_experience_prompt_template)
-        chain = prompt | self.llm_cheap | StrOutputParser()
+        chain = prompt | self.llm_good | StrOutputParser()
         raw_output = chain.invoke({
             "experience_details": work_experience,
             "job_description": job_desc,
             "skills": skills,
-            "position": position_title
+            "position": position_title,
+            "n_line_items":n_lines
         })
         output = clean_html_string(raw_output)
         return output
@@ -391,8 +395,35 @@ class LLMResumeJobDescription:
     #generate static header based on applicant information
     #ToDo: load from configuration
     def generate_applicant_name_header(self):
-        output = f'<span style="applicant_name_header">{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</span> • {self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone} • {self.resume_.personal_information.email}'
-        return output
+        #use as a default output if unable to read the chunk from file
+        output_ = f'<span class="applicant_name_header">{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</span> • <span class="phone">{self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone}</span> • <span class="email">{self.resume_.personal_information.email}</span>'
+        output = None
+        try:
+            #< div id = "header" >< table >< tr >
+            #< td class ="left-aligned-column" >
+            # < span class ="applicant_name_header" > {name_prefix}{name} {surname}{name_suffix} < /span > < /td >
+            #< td class ="right-aligned-column" > < span class ="phone" > {phone_prefix}{phone} < /span >
+            #< span class ="table-cell-delimeter" > {delim_1} < /span >
+            # < span class ="email" > {email} < /span >
+            # < span class ="table-cell-delimeter" > {delim_2} < /span >
+            # < span class ="other_contacts" > {other_contacts} < /span > < /td > < / tr >< / table >< / div >
+            fmt_params = {
+                'name_prefix':'',
+                'name':self.resume_.personal_information.name,
+                'surname':self.resume_.personal_information.surname,
+                'name_suffix':'',
+                'phone_prefix':self.resume_.personal_information.phone_prefix,
+                'phone':self.resume_.personal_information.phone,
+                'delim_1':' | ',
+                'email':self.resume_.personal_information.email
+            }
+            file_name = os.path.join(global_config.TEMPLATES_DIRECTORY, 'chunks', global_config.html_template_chunk['name_header'])
+            fmt_string = read_format_string(file_name)
+            output = fmt_string.format(**fmt_params)
+        except Exception as e:
+            printred(f'EXCEPTION in generate_applicant_name_header. Using default header Error {e}')
+            printred(traceback.format_exc())
+        return output if output is not None and len(output)>0 else output_
 
     #generate title based on position name
     def generate_application_title_ai(self):
@@ -404,7 +435,9 @@ class LLMResumeJobDescription:
         output = chain.invoke({
             "job_description": self.job_description
         })
-        return output
+        #removing non-alphanum from the beginning and end of the string
+        clean_output = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$', '', output)
+        return clean_output
 
     def generate_position_hierarchy_ai(self):
         gpt_template = self._preprocess_template_string(
@@ -491,35 +524,59 @@ class LLMResumeJobDescription:
 
     #ToDo: read from config
     def generate_career_timeline(self):
+        exp_timeline_long_table_default = """
+                <table width="760" cellpadding="0" cellspacing="0">
+                    <col width="110"/>
+                    <col width="140"/>
+                    <col width="240"/>
+                    <col width="120"/>
+                   <col width="150"/>
+                   {exp_timeline_html}
+                </table>
+                """
+        exp_timeline_long_row_default ="""<tr>
+            <td class='exp_details_company'>{exp.company}</td>
+            <td class='exp_details_industry'>{exp.industry}</td>
+           <td class='exp_details_position'>{exp.position}</td>
+           <td class='exp_details_location'>{exp.location}</td>
+            <td class='exp_details_period'>{exp.employment_period}</td>
+         </tr>"""
+
         exp_timeline_html = ""
         for exp in self.resume_.experience_details:
-            exp_timeline_html+=f"""<tr>
-                <td align="left"><b><i>{exp.company}</i></b></td>
-                <td align="left"><i>{exp.industry}</i></td>
-                <td align="left"><b>{exp.position}</b></td>
-                <td align="right">{exp.location}</td>
-                <td align="right">{exp.employment_period}</td>
-            </tr>"""
-        output_html_raw= f"""
-        <table width="760" cellpadding="0" cellspacing="0">
-            <col width="110"/>
-            <col width="140"/>
-            <col width="240"/>
-            <col width="120"/>
-            <col width="150"/>
-            {exp_timeline_html}
-        </table>
-        """
+            html_chunk = global_config.get_html_chunk('exp_timeline_long_row',exp_timeline_long_row_default)
+            exp_m = global_config.unpack_members(exp)
+            exp_timeline_html+=html_chunk.format(**exp_m)
+
+        output_html_raw = global_config.get_html_chunk('exp_timeline_long_table',default=exp_timeline_long_table_default)
+        output_html_raw = output_html_raw.format(exp_timeline_html=exp_timeline_html)
         output = clean_html_string(output_html_raw)
         return output
 
+
+
     def generate_education_summary(self):
+        edu_timeline_html = '<ul class="education-summary">Error</ul>'
+        edu_timeline_html_default = '<ul class="education-summary">{edu_li}</ul>'
+        edu_timeline_li_default = '<li><span class="degree">{degree}</span> | <span class="ed_industry">{field_of_study}</span> | <span class="ed_univ"> {university}</span></li>'
+
         #print("in generate_education_summary")
-        edu_timeline_html = '<ul class="education-summary">'
-        for edu in self.resume_.education_details:
-            edu_timeline_html += f'<li><p align="justify"><b>{edu.degree}</b>,<i> {edu.field_of_study}</i> {edu.university}</p></li>'
-        edu_timeline_html+='</ul>'
-        output = clean_html_string(edu_timeline_html)
+        try:
+            edu_timeline_html_fmt = global_config.get_html_chunk('edu_summary', default=edu_timeline_html_default)
+            edu_li_fmt = global_config.get_html_chunk('edu_summary_li', edu_timeline_li_default)
+
+            edu_list = []
+            for edu in self.resume_.education_details:
+                edu_map = global_config.unpack_members(edu)
+                _edu_li = edu_li_fmt.format(**edu_map)
+                edu_list.append(_edu_li)
+
+            edu_li=''.join(edu_list)
+            edu_timeline_html = edu_timeline_html_fmt.format(edu_li = edu_li)
+        except Exception as e:
+            print(f'Exception in generate_education_summary. Error: {e}')
+
+        output = clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
         return output
 
     def generate_language_skills_section(self):
@@ -541,8 +598,9 @@ class LLMResumeJobDescription:
 
     def generate_professional_experience_ai(self):
 
-        raw_html = "<div>"
+        raw_html = """<div class="professional-experience-a">"""
         for exp in self.resume_.experience_details:
+            exp_html = ""
             skills=""
             key_resp = ""
             try:
@@ -555,28 +613,27 @@ class LLMResumeJobDescription:
                 printcolor(f"Exception while processing key responsibiity for {exp.company}:{exp.position}. Exception: {e}")
 
             try:
-                if exp.skills_acquired is not None:
+                try:
                     skills += '\n'.join(exp.skills_acquired)
+                except: pass
 
-                if self.resume_.skills is not None:
-                    for s in self.resume_.skills:
-                        skills+=s.skill_lst
+                try:
+                    skills+=','.join([ s.skill_lst for s in self.resume_.skills])
+                except: pass
+                #if self.resume_.skills is not None:
+                #    for s in self.resume_.skills:
+                #        skills+=s.skill_lst
             except Exception as e:
                 printcolor(f"Exception while processing skills for {exp.company}:{exp.position}. Exception: {e}")
 
             # --- Position Header
-            raw_html += f"""<div>
-                        <table width="720" cellpadding="0" cellspacing="0">
-                            <col width="140"/>
-                            <col width="240"/>
-                            <col width="100"/>
-                            <col width="75"/>
-                            <tr>
-                                <td align="left" class="company_name_employment_history">{exp.company}</td>
-                                <td align="left" class="position_employment_history">{exp.position}</td>
-                                <td align="right" class="location_employment_history">{exp.location}</td>
-                                <td align="right" class="employment_period_employment_history">{exp.employment_period}</td>
-                        </table>"""
+            exp_html += f"""<div class="professional_experience_item">
+                        <table><tr>
+                                <td class="exp_details_company">{exp.company}</td>
+                                <td class="exp_details_position">{exp.position}</td>
+                                <td class="exp_details_location">{exp.location}</td>
+                                <td class="exp_details_history">{exp.employment_period}</td>
+                        </tr></table>"""
             # --- Position summary ---#
             try:
                 try:
@@ -584,9 +641,9 @@ class LLMResumeJobDescription:
                         work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description
                     )
                     if exp_summary_ai is not None and len(exp_summary_ai)>0:
-                        raw_html+= f"""<div align="justify" class="prof-exp-details">{exp_summary_ai}</div>"""
+                        exp_html+= f"""<div align="justify" class="prof-exp-summary">{exp_summary_ai}</div>"""
                 except Exception as e:
-                    raw_html += f"""<div align="justify" class="prof-exp-details">{exp.summary}</div>"""
+                    exp_html += f"""<div align="justify" class="prof-exp-summary">{exp.summary}</div>"""
                     printcolor(f'Experience section summary thrown an exception for {exp.position} for {exp.company}. Exception {e}', "yellow")
 
                 # --- Position responsibilities ---#
@@ -594,11 +651,11 @@ class LLMResumeJobDescription:
                         work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description)
 
                 if len(responsibility_html) > 0:
-                    raw_html += f"""<div><ul>{responsibility_html}</ul></div>"""
+                    exp_html += f"""<ul class="professional_exp_responsibility">{responsibility_html}</ul>"""
             except Exception as e:
                 printcolor(f"Exception while processing work experience section for {exp.company}:{exp.position}. Exception:{e}")
 
-            raw_html += "</div>"
+            raw_html += f"{exp_html}</div>"
         raw_html += "</div>"
         output = clean_html_string(raw_html)
         printcolor(f'work experience:{output}', "magenta")
@@ -638,7 +695,7 @@ class LLMResumeJobDescription:
                 print(f"Exception while processing responsibilities for {exp.position} for {exp.company}. Exception {e}")
 
             if len(responsibility_html)>0:
-                    raw_html+=f"""<div><ul>{responsibility_html}</ul></div>"""
+                    raw_html+=f"""<div class="job-responsibility">{responsibility_html}</div>"""
 
             raw_html += "</div>"
         raw_html+="</div>"

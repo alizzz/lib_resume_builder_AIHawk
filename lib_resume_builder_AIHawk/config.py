@@ -1,7 +1,13 @@
-from pathlib import Path
+import os
 import datetime
+from pathlib import Path
 from pydantic import BaseModel, EmailStr, HttpUrl
 from typing import List, Dict, Optional, Union
+from dotenv import load_dotenv
+import inspect
+
+load_dotenv()
+DEBUG = os.environ.get('DEBUG', '').lower() in ['y', 'yes', 'true', 't', '1', 'on']
 class JobContext(BaseModel):
     job_description_url: Optional[HttpUrl]=None
     job_description_raw_html: Optional[str]=None
@@ -42,14 +48,27 @@ class Context(BaseModel):
 class GlobalConfig:
     def __init__(self):
         # Inizialmente tutti i valori sono None
-        self.STRINGS_MODULE_RESUME_PATH: Path = None
-        self.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH: Path = None
-        self.STRINGS_MODULE_NAME: str = None
-        self.STYLES_DIRECTORY: Path = None
-        self.LOG_OUTPUT_FILE_PATH: Path = None
-        self.API_KEY: str = None
-        self.CONTEXT: Context = None
-        self.html_template = """
+        self.STRINGS_MODULE_RESUME_PATH: Path = os.environ.get('STRINGS_MODULE_RESUME_PATH', None)
+        self.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH: Path = os.environ.get('STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH', None)
+        self.STRINGS_MODULE_NAME: str = os.environ.get('STRINGS_MODULE_NAME', None)
+        self.STYLES_DIRECTORY: Path = os.environ.get('STYLES_DIRECTORY', None)
+        self.TEMPLATES_DIRECTORY: Path = os.environ.get('TEMPLATES_DIRECTORY', None)
+        self.LOG_OUTPUT_FILE_PATH: Path = os.environ.get('LOG_OUTPUT_FILE_PATH', None)
+        self.API_KEY: str = os.environ.get('API_KEY', None)
+        self.CONTEXT: Context = os.environ.get('CONTEXT', None)
+        self.html_template_chunk = {
+            'name_header': 'name_header_chunk.htm',
+            'exp_timeline_long_row':'exp_timeline_long_row.htm',
+            'exp_timeline_long_table':'exp_timeline_long_table.htm',
+            'edu_summary':'edu_summary_table.htm',
+            'edu_summary_li':'edu_summary_li.htm'
+        }
+        #load if stored in .env file
+        self.html_template = self.get_html_template(os.environ.get('HTML_TEMPLATE_FILE', None), 'resume_templates')
+
+    @staticmethod
+    def get_html_template(template_file, dir='resume_templates'):
+        _html_template = """
                             <!DOCTYPE html>
                             <html lang="en">
                             <head>
@@ -63,6 +82,48 @@ class GlobalConfig:
                                 $body
                             </html>
                             """
+        if template_file is None: return _html_template
+        html_template = None
+        try:
+            with open(os.path.join(template_file, dir), 'r') as f:
+                html_template = f.read()
+        except:
+            pass
+        if html_template is None or len(html_template) == 0:
+            if DEBUG: print("WARNING: html_template is not found. Using default one")
+            html_template = _html_template
+        return html_template
+
+    def get_html_chunk(self, chunk_name:str, default:str):
+        chunk = None
+        try:
+            chunk_file = self.html_template_chunk[chunk_name]
+            if chunk_file is not None and len(chunk_file)>0:
+                with open(os.path.join(self.TEMPLATES_DIRECTORY, 'chunks', chunk_file),'r', encoding='utf-8') as f:
+                    chunk = f.read()
+        except Exception as e:
+            if DEBUG:
+                print(f'Failed to load html chunk {chunk_name}. Exception {e}')
+        if chunk is None:
+            if DEBUG: print(f'Using default value for chunk {chunk_name}')
+        return chunk if not None else default
+
+    def unpack_members(self, cls, param_only=True):
+        try:
+            return cls.dict()
+        except:
+            pass
+
+        cls_m = {}
+        members = inspect.getmembers(cls)
+        for name, member in members:
+            try:
+                if not callable(member) and not name.startswith('__') and not name.startswith('_'):
+                    cls_m[name] = member
+            except Exception as e:
+                print(f'Exception in unpack_members for {type(cls)}. Error:{e}')
+
+        return cls_m
 
 # Creazione dell'istanza globale
 global_config = GlobalConfig()

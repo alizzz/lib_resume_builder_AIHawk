@@ -15,6 +15,7 @@ class FacadeManager:
         global_config.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH = lib_directory / "resume_job_description_prompt/strings_feder-cr.py"
         global_config.STRINGS_MODULE_NAME = "strings_feder_cr"
         global_config.STYLES_DIRECTORY = lib_directory / "resume_style"
+        global_config.TEMPLATES_DIRECTORY = lib_directory / 'resume_templates'
         global_config.LOG_OUTPUT_FILE_PATH = log_path
         global_config.API_KEY = api_key
         self.style_manager = style_manager
