@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import traceback
 
@@ -7,6 +8,18 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium import webdriver
 import time
 from webdriver_manager.chrome import ChromeDriverManager
+
+def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
+    #allowed pattern allows valid file names excluding those that start with ., _, __, and end with .py
+    file_dict = {}
+    # Walk through the directory
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            # Split the file name and extension
+            file_name_without_ext, file_ext = os.path.splitext(file)
+            if bool(re.match(allowed_pattern, file)):
+                file_dict[file_name_without_ext] = file
+    return file_dict
 
 def create_driver_selenium():
     options = get_chrome_browser_options()  # Usa il metodo corretto per ottenere le opzioni

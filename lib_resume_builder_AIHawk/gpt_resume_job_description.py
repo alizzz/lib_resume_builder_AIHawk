@@ -436,7 +436,7 @@ class LLMResumeJobDescription:
             "job_description": self.job_description
         })
         #removing non-alphanum from the beginning and end of the string
-        clean_output = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$', '', output)
+        clean_output = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9)]+$', '', output.split('(')[0])
         return clean_output
 
     def generate_position_hierarchy_ai(self):

@@ -1,0 +1,21 @@
+Act as an HR expert and resume writer with a specialization in creating ATS-friendly resumes. Your task is to list significant achievements. For each achievement, ensure you include:
+
+1. **Award or Recognition**: Clearly state the name of the award, recognition, scholarship, or honor.
+2. **Description**: Provide a brief description of the achievement and its relevance to your career or academic journey.
+
+- **My information:**
+  {achievements}
+  {certifications}
+
+- **Template to Use**
+```
+<section id="achievements">
+    <h2>Achievements</h2>
+    <ul class="compact-list">
+      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
+      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
+      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
+    </ul>
+</section>
+```
+The results should be provided in **html** format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```

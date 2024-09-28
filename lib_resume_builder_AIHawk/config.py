@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr, HttpUrl
 from typing import List, Dict, Optional, Union
 from dotenv import load_dotenv
 import inspect
+from lib_resume_builder_AIHawk.utils import get_dict_names_from_dir
 
 load_dotenv()
 DEBUG = os.environ.get('DEBUG', '').lower() in ['y', 'yes', 'true', 't', '1', 'on']
@@ -56,13 +57,15 @@ class GlobalConfig:
         self.LOG_OUTPUT_FILE_PATH: Path = os.environ.get('LOG_OUTPUT_FILE_PATH', None)
         self.API_KEY: str = os.environ.get('API_KEY', None)
         self.CONTEXT: Context = os.environ.get('CONTEXT', None)
-        self.html_template_chunk = {
-            'name_header': 'name_header_chunk.htm',
-            'exp_timeline_long_row':'exp_timeline_long_row.htm',
-            'exp_timeline_long_table':'exp_timeline_long_table.htm',
-            'edu_summary':'edu_summary_table.htm',
-            'edu_summary_li':'edu_summary_li.htm'
-        }
+        self.html_template_chunk = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'resume_templates', 'chunks'))
+        self.prompt_dict = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'resume_prompt'))
+        #{
+        #    'name_header': 'name_header.chunk',
+        #    'exp_timeline_long_row':'exp_timeline_long_row.chunk',
+        #    'exp_timeline_long_table':'exp_timeline_long_table.chunk',
+        #    'edu_summary':'edu_summary_table.chunk',
+        #    'edu_summary_li':'edu_summary_li.chunk'
+        #}
         #load if stored in .env file
         self.html_template = self.get_html_template(os.environ.get('HTML_TEMPLATE_FILE', None), 'resume_templates')
 

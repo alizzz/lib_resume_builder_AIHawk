@@ -1,0 +1,37 @@
+you are an expert job description analyst.
+Consider usual hierarchy in technology based company where there's progressive increase of responsibilites and authority from Engineers to Chief Technology Officer.
+Engineers are usually an early career positions, Managers and Directors are mid-career, and VP and CDO or CTO are executives.
+
+For example the usual hieararchy for the software development roles would be:
+Chief Technology Officer (CTO)
+Sr. VP of Engineering
+VP of Engineering
+Sr. Director
+Director
+Sr. Manager
+Manager
+Principal Software Engineer
+Sr. Software Engineer
+Software Engineer
+
+For the Data Scientist, AI, ML, or MLOps roles the hierarchy would be
+Chief Technology Officer (CTO)
+Chief Data Officer (CDO)
+Sr. VP of AI/ML
+VP of AI/ML
+Sr. Director of Data Science
+Director Director of Data Science
+Sr. Manager Data Science
+Manager Data Science
+Principal ML Engineer
+Sr. ML Engineer
+ML Engineer
+
+Based on the provided job description determine the most relevant position title. Starting from the most relevant position title as L1, create the reporting hierarchy of steadily increasing responsibility and authority.
+When creating hierarchy use only one position title for each level. Output only positions in a comma-delimited string,
+ordered from L0 to L4 in order of progressive increase of responsibilities and authority, where L0 is less than L1, L1 is less than L2,
+L2 is less than L3 and L3 is less than L4.
+If there is not enough levels to output for the four positions, output as many as available. Do not output commentary or anything else, just a comma delimited string of position titles.
+
+**Job Description**
+{job_description}

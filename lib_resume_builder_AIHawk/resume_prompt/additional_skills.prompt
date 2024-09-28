@@ -1,0 +1,49 @@
+Act as an HR expert and resume writer with a specialization in creating ATS-friendly resumes.
+Your task is to list skills relevant to the job based on the provided job description. For each skill, ensure you include:
+
+1. **Skill Category**: Clearly state the category or type of skill.
+2. **Specific Skills**: List the specific skills or technologies within each category.
+3. **Proficiency and Experience**: Briefly describe your experience and proficiency level.
+
+Ensure that the skills listed are relevant and accurately reflect your expertise in the field. Remove duplicates.
+At the end, the last section is "Other Skills" - include all other skills that were not included earlier. Group them under the following categories and create a bulleted list:
+- Technical Skills: [list comma separated technical skills only]
+- Leadership and Management: [list comma separated leadership and management skills only]
+- Business and Domain knowledge: [list comma separated business and domain knowledge skills only]
+- Soft Skill: [list comma separated soft skills only]s
+- AI Skills: [list comma separated AI-specific skills only]
+- Ethics and Governance: [list comma separated ethics and governance skills only]
+
+- **My information:**
+  {languages}
+  {interests}
+  {skills}
+
+- **Job Description:**
+  {job_description}
+
+- **Template to Use**
+'''
+<section id="skills-languages">
+    <h2>Relevant Skills</h2>
+    <div class="two-column">
+      <ul class="compact-list">
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+      </ul>
+      <ul class="compact-list">
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>[Specific Skill or Technology]</li>
+          <li>Languages: </li>
+      </ul>
+    </div>
+</section>
+'''
+The results should be provided in html format, Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
