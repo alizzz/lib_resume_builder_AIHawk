@@ -11,6 +11,7 @@ class FacadeManager:
     def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path, selected_style = None):
         # Ottieni il percorso assoluto della directory della libreria
         lib_directory = Path(__file__).resolve().parent
+        global_config.PROMPTS_PATH = lib_directory / "prompts"
         global_config.STRINGS_MODULE_RESUME_PATH = lib_directory / "resume_prompt/strings_feder-cr.py"
         global_config.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH = lib_directory / "resume_job_description_prompt/strings_feder-cr.py"
         global_config.STRINGS_MODULE_NAME = "strings_feder_cr"

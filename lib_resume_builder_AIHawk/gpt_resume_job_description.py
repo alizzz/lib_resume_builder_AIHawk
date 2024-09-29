@@ -27,130 +27,35 @@ from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 #from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 import lib_resume_builder_AIHawk.resume_templates.resume_template
-from lib_resume_builder_AIHawk.utils import printcolor, printred, printyellow, read_format_string
+from lib_resume_builder_AIHawk.utils import printcolor, printred, printyellow, read_format_string, get_content
 from lib_resume_builder_AIHawk.config import global_config
+from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase, LLMLogger, LoggerChatModel, clean_html_string
+
 
 load_dotenv()
-#ToDo: make it read config file
+# ToDo: make it read config file
 
-template_file = os.path.join(os.path.dirname(__file__), 'resume_templates', os.environ.get('RESUME_TEMPLATE','hawk_resume_template.html'))
+template_file = os.path.join(os.path.dirname(__file__), 'resume_templates',
+                             os.environ.get('RESUME_TEMPLATE', 'hawk_resume_template.html'))
 css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_hawk.css')
 fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
 
-#removes \n and multiple spaces from a string
-def clean_html_string(html_string):
-    # Remove newline characters and leading/trailing spaces
-    cleaned_string = html_string.replace("\n", " ").strip()
 
-    # Replace multiple spaces with a single space
-    cleaned_string = re.sub(r'\s+', ' ', cleaned_string)
-
-    return cleaned_string
-
-class LLMLogger:
-    
-    def __init__(self, llm: ChatOpenAI):
-        self.llm = llm
-
-    @staticmethod
-    def log_request(prompts, parsed_reply: Dict[str, Dict]):
-        calls_log = global_config.LOG_OUTPUT_FILE_PATH / "open_ai_calls.json"
-        if isinstance(prompts, StringPromptValue):
-            prompts = prompts.text
-        elif isinstance(prompts, Dict):
-            # Convert prompts to a dictionary if they are not in the expected format
-            prompts = {
-                f"prompt_{i+1}": prompt.content
-                for i, prompt in enumerate(prompts.messages)
-            }
-        else:
-            prompts = {
-                f"prompt_{i+1}": prompt.content
-                for i, prompt in enumerate(prompts.messages)
-            }
-
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Extract token usage details from the response
-        token_usage = parsed_reply["usage_metadata"]
-        output_tokens = token_usage["output_tokens"]
-        input_tokens = token_usage["input_tokens"]
-        total_tokens = token_usage["total_tokens"]
-
-        # Extract model details from the response
-        model_name = parsed_reply["response_metadata"]["model_name"]
-        prompt_price_per_token = 0.00000015
-        completion_price_per_token = 0.0000006
-
-        # Calculate the total cost of the API call
-        total_cost = (input_tokens * prompt_price_per_token) + (
-            output_tokens * completion_price_per_token
-        )
-
-        # Create a log entry with all relevant information
-        log_entry = {
-            "model": model_name,
-            "time": current_time,
-            "prompts": prompts,
-            "replies": parsed_reply["content"],  # Response content
-            "total_tokens": total_tokens,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_cost": total_cost,
-        }
-
-        # Write the log entry to the log file in JSON format
-        with open(calls_log, "a", encoding="utf-8") as f:
-            json_string = json.dumps(log_entry, ensure_ascii=False, indent=4)
-            f.write(json_string + "\n")
-
-
-class LoggerChatModel:
-
-    def __init__(self, llm: ChatOpenAI):
-        self.llm = llm
-
-    def __call__(self, messages: List[Dict[str, str]]) -> str:
-        reply = self.llm(messages)
-        parsed_reply = self.parse_llmresult(reply)
-        LLMLogger.log_request(prompts=messages, parsed_reply=parsed_reply)
-        return reply
-
-    def parse_llmresult(self, llmresult: AIMessage) -> Dict[str, Dict]:
-        content = llmresult.content
-        response_metadata = llmresult.response_metadata
-        id_ = llmresult.id
-        usage_metadata = llmresult.usage_metadata
-        parsed_result = {
-            "content": content,
-            "response_metadata": {
-                "model_name": response_metadata.get("model_name", ""),
-                "system_fingerprint": response_metadata.get("system_fingerprint", ""),
-                "finish_reason": response_metadata.get("finish_reason", ""),
-                "logprobs": response_metadata.get("logprobs", None),
-            },
-            "id": id_,
-            "usage_metadata": {
-                "input_tokens": usage_metadata.get("input_tokens", 0),
-                "output_tokens": usage_metadata.get("output_tokens", 0),
-                "total_tokens": usage_metadata.get("total_tokens", 0),
-            },
-        }
-        return parsed_result
-
-class LLMResumeJobDescription:
+class LLMResumeJobDescription(LLMResumerBase):
     def __init__(self, openai_api_key, strings):
-        self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
-        self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
+        #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
+        #self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
+        #self.strings = strings
+        super().__init__(openai_api_key=openai_api_key, strings=strings)
         self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        self.strings = strings
         self.pos_hierarchy_list = None
         self.resume_ = None
 
-    @staticmethod
-    def _preprocess_template_string(template: str) -> str:
-        # Preprocess a template string to remove unnecessary indentation.
-        return textwrap.dedent(template)
+
+    #@staticmethod
+    #def _preprocess_template_string(template: str) -> str:
+    #    # Preprocess a template string to remove unnecessary indentation.
+    #   return textwrap.dedent(template)
 
     def set_resume(self, resume):
         self.resume_ = copy.deepcopy(resume)
@@ -181,15 +86,9 @@ class LLMResumeJobDescription:
         text_splitter = TokenTextSplitter(chunk_size=200, chunk_overlap=50)
         all_splits = text_splitter.split_documents(document)
         vectorstore = FAISS.from_documents(documents=all_splits, embedding=self.llm_embeddings)
+        _prompt_text = get_content('generic_question_about_job_description.prompts', os.path.join(os.path.dirname(__file__), 'resume_prompt'))
         prompt = PromptTemplate(
-            template="""
-            You are an expert job description analyst. Your role is to meticulously analyze and interpret job descriptions. 
-            After analyzing the job description, answer the following question in a clear, and informative manner.
-            
-            Question: {question}
-            Job Description: {context}
-            Answer:
-            """,
+            template=_prompt_text,
             input_variables=["question", "context"]
         )
 
@@ -370,7 +269,7 @@ class LLMResumeJobDescription:
         #skills.update([x for x in split_string(
         #    'Critical thinking, Problem-solving, Creativity, Adaptability and resilience, Effective communication, Data storytelling, Executive presence, Stakeholder management, Analytical reasoning, Creative problem-solving')])
         #skills.update([x for x in split_string(
-        #    'prompt engineering, AI literacy (understanding concepts and terminology), Human-AI interaction, Ethical AI development and implementation, AI ethics and governance, Generative AI, genAI')])
+        #    'prompts engineering, AI literacy (understanding concepts and terminology), Human-AI interaction, Ethical AI development and implementation, AI ethics and governance, Generative AI, genAI')])
         #skills.update([x for x in split_string(
         #    'data ethics,
     #    if self.resume_.skills:
@@ -581,6 +480,7 @@ class LLMResumeJobDescription:
 
     def generate_language_skills_section(self):
         #print("in generate_language_skills_section")
+
         edu_timeline_html = '<ul class="skills">'
         if self.resume_.languages is None or len(self.resume_.languages)==0:
             return clean_html_string(f'{edu_timeline_html}<li><b>"English</b>:Native</li></ul>')

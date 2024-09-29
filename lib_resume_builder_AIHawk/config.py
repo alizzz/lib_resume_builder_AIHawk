@@ -49,6 +49,7 @@ class Context(BaseModel):
 class GlobalConfig:
     def __init__(self):
         # Inizialmente tutti i valori sono None
+        self.PROMPTS_PATH: Path = os.environ.get("PROMPTS_PATH", None)
         self.STRINGS_MODULE_RESUME_PATH: Path = os.environ.get('STRINGS_MODULE_RESUME_PATH', None)
         self.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH: Path = os.environ.get('STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH', None)
         self.STRINGS_MODULE_NAME: str = os.environ.get('STRINGS_MODULE_NAME', None)
@@ -96,6 +97,7 @@ class GlobalConfig:
             if DEBUG: print("WARNING: html_template is not found. Using default one")
             html_template = _html_template
         return html_template
+
 
     def get_html_chunk(self, chunk_name:str, default:str):
         chunk = None

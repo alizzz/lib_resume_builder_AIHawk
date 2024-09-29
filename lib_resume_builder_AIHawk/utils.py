@@ -21,6 +21,40 @@ def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[
                 file_dict[file_name_without_ext] = file
     return file_dict
 
+def get_dict_values_from_files(directory_path: str = '',
+                               allowed_pattern=r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
+    d = {}
+    if not os.path.exists(directory_path):
+        print(f'Unable to return dict values. Dir {directory_path} does not exist')
+        return d
+    try:
+        for root, dirs, files in os.walk(directory_path):
+            for file in files:
+                # Split the file name and extension
+                file_name_without_ext, file_ext = os.path.splitext(file)
+                if bool(re.match(allowed_pattern, file)):
+                    with open(file, mode='r', encoding='utf-8') as f:
+                        content = f.read()
+                        d[file_name_without_ext] = content
+    except Exception as e:
+        print(f'Exception while reading dir {directory_path}. Error: {e}')
+    return d
+
+def get_content(file:str, dir:str=''):
+    fpath = file
+    content = ''
+    try:
+        if dir is not None and len(dir)>0:
+            fpath = os.path.join(dir, file)
+        if os.path.exists(fpath) and os.path.isfile(fpath):
+            with open(fpath, mode='r', encoding='utf-8') as f:
+                content = f.read()
+        else:
+            print(f'Unable to read content of a a file {fpath}. Error: "File does not exist"')
+    except Exception as e:
+        print(f'Exception while reading content of a a file {fpath}. Error: {e}')
+    return content
+
 def create_driver_selenium():
     options = get_chrome_browser_options()  # Usa il metodo corretto per ottenere le opzioni
     service = ChromeService(ChromeDriverManager().install())

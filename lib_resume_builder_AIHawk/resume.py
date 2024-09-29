@@ -17,6 +17,8 @@ class PersonalInformation(BaseModel):
     linkedin: Optional[HttpUrl]
     years_technical_experience: Optional[str]
     years_mgmt_experience: Optional[str]
+    name_prefix: Optional[str]
+    name_suffix: Optional[str]
 
 class EducationDetails(BaseModel):
     degree: Optional[str]
