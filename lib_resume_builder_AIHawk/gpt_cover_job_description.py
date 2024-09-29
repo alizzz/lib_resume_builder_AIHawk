@@ -42,6 +42,20 @@ template_file = os.path.join(os.path.dirname(__file__), 'resume_templates',
 css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_hawk.css')
 fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
 
+def text_from_html(html:str) ->str:
+    # Step 1: Remove content inside <style> tags
+    html_string_no_style = re.sub(r'<style.*?>.*?</style>', '', html, flags=re.DOTALL)
+
+    # Step 2: Extract content from <body> tag only
+    body_content = re.search(r'<body.*?>(.*?)</body>', html_string_no_style, flags=re.DOTALL)
+    if body_content:
+        body_html = body_content.group(1)
+    else:
+        body_html = html_string_no_style  # fallback if body tag is missing
+
+    # Step 3: Remove remaining HTML tags
+    text = re.sub('<[^<]+?>', '', body_html)
+    return text
 
 class LLMCoverJobDescription(LLMResumerBase):
     def __init__(self, openai_api_key, strings):
@@ -63,22 +77,26 @@ class LLMCoverJobDescription(LLMResumerBase):
         html = global_config.get_html_chunk(chunk_name='name_header', default=chunk_)
         return html.format(**(pi.dict()), delim_1 = delim)
 
-    def create_cover_body_ai(self, personal_information:PersonalInformation, resume_path:str, job_description:str, company_name:str, title:str, prompt:str='cover_letter_body.prompt'):
+    def create_cover_body_ai(self, personal_information:PersonalInformation, resume_path:str, job_description:str, company_name:str, title:str, company:str, prompt:str='cover_letter_body.prompt'):
         cover_letter_prompt=''
         resume = ''
         with open(os.path.join(global_config.PROMPTS_PATH, prompt), 'r', encoding='utf-8') as f:
             cover_letter_prompt = f.read()
 
         with open(os.path.join(resume_path),'w',encoding='utf-8') as f:
-            resume = f.read()
+            resume = text_from_html(f.read())
 
         header_prompt_template = self._preprocess_template_string(cover_letter_prompt)
         prompt = ChatPromptTemplate.from_template(header_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
+            "name_prefix": personal_information.name_prefix,
+            "name": personal_information.name,
+            "surname": personal_information.surname,
+            "name_suffix": personal_information.name_suffix,
+            "company": company,
+            "title": title,
             "resume": resume,
-            "job_description": self.job_description
+            "job_description": job_description
         })
         return output
-
-
