@@ -178,6 +178,14 @@ h2.summary-title{
      clear: both;
      page-break-after: always;
   }
+.two-column{
+    column-count: 2;
+    column-fill: balance; /* Vertical use of space, default: balance the creation of columns is symmetrical. Auto with width: 100%, First complete the first column vertically, then the next column until the end of the content. */
+    column-gap: 0px; /* Distance between columns */
+    column-rule: 2px; /* Lines between columns */
+    column-span: all; /* Another method to create heading, can be 2 of 3 columns */
+    column-width: auto; /* Width of all columns */
+  }
 /*
     .print-page::before {
         content: '';

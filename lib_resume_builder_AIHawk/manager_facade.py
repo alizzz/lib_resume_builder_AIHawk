@@ -91,28 +91,3 @@ class FacadeManager:
             temp_html_file.close()
 
         return pdf_base64
-
-
-    #original version
-    def _pdf_base64(self, job_description_url=None, job_description_text=None):
-        if (job_description_url is not None and job_description_text is not None):
-            raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
-        
-        if self.selected_style is None:
-            raise ValueError("You must choose a style before generating the PDF.")
-        
-        style_path = self.style_manager.get_style_path(self.selected_style)
-
-        with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.html', encoding='utf-8') as temp_html_file:
-            temp_html_path = temp_html_file.name
-            if job_description_url is None and job_description_text is None:
-                self.resume_generator.create_resume(style_path, temp_html_path)
-            elif job_description_url is not None and job_description_text is None:
-                self.resume_generator.create_resume_job_description_url(style_path, job_description_url, temp_html_path)
-            elif job_description_url is None and job_description_text is not None:
-                self.resume_generator.create_resume_job_description_text(style_path, job_description_text, temp_html_path)
-            else:
-                return None
-        pdf_base64 = HTML_to_PDF(temp_html_path)
-        os.remove(temp_html_path)
-        return pdf_base64

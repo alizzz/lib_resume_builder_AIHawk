@@ -1,4 +1,9 @@
-you are an expert job description analyst. Carefully analyze provided job description and create the most relevant position title. Return just the title:
+you are an expert job description analyst and resume writer.
+Carefully analyze provided job description and create the most relevant position title.
+Make sure that length of the title does not exceed 40 charachters.
+Make sure that the created position title is not specific to the job description and is recognized by people familiar
+with the field but not familiar with the specific company or function.
+Return just the title:
 
 **Job Description**
 {job_description}

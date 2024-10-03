@@ -4,7 +4,7 @@ You are an expert resume writer. Using the applicant's resume information, and t
 ** Output Template to use **
 <div>
     <p align="left" class="career-summary">
-       I am a [seasoned|knowledgeable|skilled|proficient] [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'].
+       I am a [insert one of: seasoned|knowledgeable|skilled|proficient] [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'].
        I [include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'].
        During my career [include one or two most important achievements, directly relevant for the job description]
     <p align="left" class="career-summary">[Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]

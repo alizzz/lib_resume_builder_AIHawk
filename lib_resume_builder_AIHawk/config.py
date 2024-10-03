@@ -64,7 +64,7 @@ class GlobalConfig:
         #    'name_header': 'name_header.chunk',
         #    'exp_timeline_long_row':'exp_timeline_long_row.chunk',
         #    'exp_timeline_long_table':'exp_timeline_long_table.chunk',
-        #    'edu_summary':'edu_summary_table.chunk',
+        #    'edu_summary':'education.chunk',
         #    'edu_summary_li':'edu_summary_li.chunk'
         #}
         #load if stored in .env file

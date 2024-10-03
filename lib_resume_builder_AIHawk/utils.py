@@ -6,6 +6,8 @@ import traceback
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+
 import time
 from webdriver_manager.chrome import ChromeDriverManager
 
@@ -60,36 +62,43 @@ def create_driver_selenium():
     service = ChromeService(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=options)
 
-def HTML_to_PDF(FilePath):
+def HTML_to_PDF(FilePath, sleep_time:int=2, by:(By, str)=(None, None)):
     # Validazione e preparazione del percorso del file
     if not os.path.isfile(FilePath):
         raise FileNotFoundError(f"The specified file does not exist: {FilePath}")
-    FilePath = f"file:///{os.path.abspath(FilePath).replace(os.sep, '/')}"
-    driver = create_driver_selenium()
 
+    FilePath = f"file:///{os.path.abspath(FilePath).replace(os.sep, '/')}"
+    driver:webdriver.Chrome = None
     try:
+        driver = create_driver_selenium()
         driver.get(FilePath)
-        time.sleep(2)
-        pdf_base64 = driver.execute_cdp_cmd("Page.printToPDF", {
-            "printBackground": True,         # Include lo sfondo nella stampa
-            "landscape": False,              # Stampa in verticale (False per ritratto)
-            "paperWidth": 8,              # Larghezza del foglio in pollici (A4)
-            "paperHeight": 11,            # Altezza del foglio in pollici (A4)
-            "marginTop": 0.5,                # Margine superiore in pollici (circa 2 cm)
-            "marginBottom": 0.5,             # Margine inferiore in pollici (circa 2 cm)
-            "marginLeft": 0.3,               # Margine sinistro in pollici (circa 2 cm)
-            "marginRight": 0.3,              # Margine destro in pollici (circa 2 cm)
-            "displayHeaderFooter": False,   # Non visualizzare intestazioni e piè di pagina
-            "preferCSSPageSize": True,       # Preferire le dimensioni della pagina CSS
-            "generateDocumentOutline": False, # Non generare un sommario del documento
-            "generateTaggedPDF": False,      # Non generare PDF taggato
-            "transferMode": "ReturnAsBase64" # Restituire il PDF come stringa base64
-        })
-        return pdf_base64['data']
+        time.sleep(sleep_time)
+        if not all(by):
+            pdf_base64 = driver.execute_cdp_cmd("Page.printToPDF", {
+                "printBackground": True,         # Include lo sfondo nella stampa
+                "landscape": False,              # Stampa in verticale (False per ritratto)
+                "paperWidth": 8,              # Larghezza del foglio in pollici (A4)
+                "paperHeight": 11,            # Altezza del foglio in pollici (A4)
+                "marginTop": 0.5,                # Margine superiore in pollici (circa 2 cm)
+                "marginBottom": 0.5,             # Margine inferiore in pollici (circa 2 cm)
+                "marginLeft": 0.3,               # Margine sinistro in pollici (circa 2 cm)
+                "marginRight": 0.3,              # Margine destro in pollici (circa 2 cm)
+                "displayHeaderFooter": False,   # Non visualizzare intestazioni e piè di pagina
+                "preferCSSPageSize": True,       # Preferire le dimensioni della pagina CSS
+                "generateDocumentOutline": False, # Non generare un sommario del documento
+                "generateTaggedPDF": False,      # Non generare PDF taggato
+                "transferMode": "ReturnAsBase64" # Restituire il PDF come stringa base64
+            })
+            return pdf_base64['data']
+        else:
+            return ';'.join([x.text for x in driver.find_elements(by[0], by[1])])
+
+
     except WebDriverException as e:
         raise RuntimeError(f"WebDriver exception occurred: {e}")
     finally:
-        driver.quit()
+        if driver is not None:
+            driver.quit()
 
 def get_chrome_browser_options():
     options = webdriver.ChromeOptions()

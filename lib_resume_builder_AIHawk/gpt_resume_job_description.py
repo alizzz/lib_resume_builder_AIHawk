@@ -307,10 +307,10 @@ class LLMResumeJobDescription(LLMResumerBase):
             # < span class ="table-cell-delimeter" > {delim_2} < /span >
             # < span class ="other_contacts" > {other_contacts} < /span > < /td > < / tr >< / table >< / div >
             fmt_params = {
-                'name_prefix':'',
+                'name_prefix':self.resume_.personal_information.name_prefix,
                 'name':self.resume_.personal_information.name,
                 'surname':self.resume_.personal_information.surname,
-                'name_suffix':'',
+                'name_suffix':self.resume_.personal_information.name_suffix,
                 'phone_prefix':self.resume_.personal_information.phone_prefix,
                 'phone':self.resume_.personal_information.phone,
                 'delim_1':' | ',
@@ -372,55 +372,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                 new_pos = _position_automl(position, self.pos_hierarchy_list)
                 self.resume_.experience_details[k].position = new_pos
 
-
-    def generate_application_title(self):
-        output=f'Head of Data Science, Analytics, ML Engineering'
-        return output
-
-    #ToDo: read from config or build based on job description
-    #ToDo: genAI
-    def generate_career_summary(self):
-        raw_output = """
-        <b>I am a seasoned AI/ML executive who drives R&amp;D and innovative solutions
-        through visionary leadership, broad technical expertise, and
-        strategic collaboration</b>. Known for loyalty, impactful results,
-        and a supportive, even-tempered approach for the last two
-        dozen years I deliver sustainable growth with adaptability and
-        continuous learning, fostering and nurturing high-performing
-        internationally distributed teams, extensive collaboration, and
-        x-functional alignment. </p>
-        <p align="left" class="career-summary">During
-        my entire career I’ve been translating business requirements into
-        technical definitions, leading advanced R&amp;D projected and
-        converting it to ground breaking products. I am proficient in the
-        Artificial Intelligence, Machine Learning, Database, Software and
-        Networking technology. I have a proven track record in building
-        robust product analytics, data science, and developing cutting-edge
-        ML algorithms such as computer vision, NLP, classification,
-        supervised/unsupervised learning, and anomaly detection to deliver
-        business impact by solving customer problems and growing revenue. I
-        am skilled in data stewardship,  business analytics, and building AI
-        as-a-service in the cloud. I have a proven success in delivering
-        impactful, value-adding solutions, overseeing full product
-        development cycles, and meeting critical milestones. I have a deep
-        passion for research, tolerance for ambiguity, and a positive &quot;can
-        do&quot; attitude with a strong business orientation.
-        </p>
-        <p align="left" class="career-summary">
-        As you can see below my track record includes over <b>25 
-        years of progressive technical and business experience</b> 
-        delivering innovative, business-defining products, and <b>18 years of successful team management and engineering leadership</b> 
-        specifically focusing on building and nurturing diverse,
-        geographically distributed teams of engineers and scientists. I
-        demonstrated ability to build a common culture based on trust,
-        ownership and accountability. I excel in team building, resource
-        orchestration, and aligning teams with strategic goals to ensure
-        seamless execution, building a great value for customers and
-        increasing revenue.</p>
-        """
-        output = clean_html_string(raw_output)
-        return output
-
     #ToDo: read from config
     def generate_career_timeline(self):
         exp_timeline_long_table_default = """
@@ -455,14 +406,16 @@ class LLMResumeJobDescription(LLMResumerBase):
 
 
     def generate_education_summary(self):
-        edu_timeline_html = '<ul class="education-summary">Error</ul>'
-        edu_timeline_html_default = '<ul class="education-summary">{edu_li}</ul>'
+        edu_timeline_html_default = """<h2 class="education-header">Education and Training</h2>
+                                        <ul class="education-summary">{edu_li}</ul>"""
+
         edu_timeline_li_default = '<li><span class="degree">{degree}</span> | <span class="ed_industry">{field_of_study}</span> | <span class="ed_univ"> {university}</span></li>'
+        edu_timeline_html = '<!--'+edu_timeline_html_default+'-->'
 
         #print("in generate_education_summary")
         try:
-            edu_timeline_html_fmt = global_config.get_html_chunk('edu_summary', default=edu_timeline_html_default)
-            edu_li_fmt = global_config.get_html_chunk('edu_summary_li', edu_timeline_li_default)
+            edu_timeline_html_fmt = global_config.get_html_chunk('education', default=edu_timeline_html_default)
+            edu_li_fmt = global_config.get_html_chunk('edu_summary_li', default=edu_timeline_li_default)
 
             edu_list = []
             for edu in self.resume_.education_details:

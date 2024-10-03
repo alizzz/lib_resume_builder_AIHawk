@@ -1,0 +1,2 @@
+<h2 class="education-header">Education and Training</h2>
+<ul class="education-summary">{edu_li}</ul>
