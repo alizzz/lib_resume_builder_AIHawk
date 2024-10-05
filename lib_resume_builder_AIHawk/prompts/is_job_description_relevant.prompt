@@ -1,4 +1,4 @@
-You are an experience HR professional and job desciption analyst.
+You are an experienced HR professional and job desciption analyst.
 Read the job description and thoroughly analyze it. Answer the question if this job is relevant to {relevance_criteria}.
 Answer only the relevance and your confidence in the answer using the following valid json of the following format
 'relevant': 'Yes'  or 'No',
