@@ -173,7 +173,7 @@ class LLMResumeJobDescription(LLMResumerBase):
             self.strings.prompt_professional_experience_role_summary
         )
         prompt = ChatPromptTemplate.from_template(work_experience_summary_prompt_template)
-        chain = prompt | self.llm_cheap | StrOutputParser()
+        chain = prompt | self.llm_good | StrOutputParser()
         raw_output = chain.invoke({
             "job_desc": job_desc,
             "work_experience": work_experience,

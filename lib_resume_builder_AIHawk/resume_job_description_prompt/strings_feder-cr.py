@@ -251,9 +251,14 @@ prompt_professional_experience_role_summary = """
 Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives. 
 Your task is to summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns with the provided job description, applicant's experience, applicant's skills, and the job title. 
 Ensure that the created work experience summary builds on top of relevant applicant's experience and aligns well with the job description. Be specific and relevant to this position. 
-For example, it may say: "In this role I was tasked with building new machine learning platform, leading and growing the team of data science engineers"
+For example, it may say: 
+<begin example>I built a new machine learning platform while leading and growing the team of data science engineers<end example>
+<begin example>I created a decision support framework that became a main source of sustainable competitive advantage for the company. I lead and developed the high performing team of data scientists and engineers with the highest employee satisfaction score in the company<end example>
+
+You should use variants of the phrase 'I led the ...', or 'I directed the team efforts to ...', or 'I guided the team to ...', or 'I managed the development of ...', or 'I was responsible for ...', or 'I oversaw the execution of...', or 'I took ownership of ...', or 'I championed the development of ...', 'I played a key role in orchestrating the development of ...', or 'I provided strategy and execution leadership for the ...' and so on. Choose one of them randomly, or rephrase it.   
+
 It will involve a thorough and deep analysis of job description, aplicant's experience, and customary responsibility of the job title. 
-Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one sentence. 
+Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one sentence. Do not repeat examples verbatim.
 Output just the summary and nothing else. 
 
 **Job Description:**
@@ -386,7 +391,7 @@ Technical Skills: List all the specific technical skills required for the role b
 Soft Skills: Identify the necessary soft skills, such as communication abilities, problem-solving, time management, etc.
 Educational Qualifications and Certifications: Specify the essential educational qualifications and certifications for the role.
 Professional Experience: Describe the relevant work experiences that are required or preferred.
-Role Evolution: Analyze how the role might evolve in the future, considering industry trends and how these might influence the required skills.
+Additional Requirements: Add all other requirements and qualifications that employer seeks in the candidate
 
 # Final Result:
 Your analysis should be structured in a clear and organized document with distinct sections for each of the points listed above. Each section should contain:
@@ -414,7 +419,7 @@ you are an expert job description analyst.
 Consider usual hierarchy in technology based company where there's progressive increase of responsibilites and authority from Engineers to Chief Technology Officer. 
 Engineers are usually an early career positions, Managers and Directors are mid-career, and VP and CDO or CTO are executives.   
 
-For example the usual hieararchy for the software development roles would be: 
+For example the usual hieararchy for the software development roles, with the most important role at the top, would be: 
 Chief Technology Officer (CTO)
 Sr. VP of Engineering
 VP of Engineering
@@ -441,9 +446,10 @@ ML Engineer
 
 Based on the provided job description determine the most relevant position title. Starting from the most relevant position title as L1, create the reporting hierarchy of steadily increasing responsibility and authority. 
 When creating hierarchy use only one position title for each level. Output only positions in a comma-delimited string, 
-ordered from L0 to L4 in order of progressive increase of responsibilities and authority, where L0 is less than L1, L1 is less than L2, 
-L2 is less than L3 and L3 is less than L4. 
-If there is not enough levels to output for the four positions, output as many as available. Do not output commentary or anything else, just a comma delimited string of position titles. 
+ordered from L1 to L4 in order of progressive increase of responsibilities and authority, [L1],[L2],[L3],[L4]. Replace each bracket with approprite position title
+L1 is the position similar to the most relevant position title, L2 is a higher position, with more responsibility and authority, than L1,  
+L3 is higher than L2, and L4 is higher than L3. 
+If there is not enough levels to output for the four positions, output as many as available. Do not output any commentary, brackets, L1, L2, L3, L4, or anything else, just a comma delimited string of position titles. 
 
 **Job Description**
 {job_description}

@@ -1,9 +1,9 @@
 Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
 Your task is to summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns with the provided job description, applicant's experience, applicant's skills, and the job title.
 Ensure that the created work experience summary builds on top of relevant applicant's experience and aligns well with the job description.
-Be specific and relevant to this position. Emphasize benefits to the business, such as improved customer satisfaction, employee retention, cost reduction, or other benefits to the business
+Be specific and relevant to this position. Emphasize benefits to the business, such as improved customer satisfaction, employee retention, cost reduction, or other benefits to the business. Create specific examples
 For example,
-it may say: <begin example>"I was tasked with building new machine learning platform, leading and growing the team of data science engineers. As a result at the end of my tenure customer retention improved by 26%"<end example>
+it may say: <begin example>"I built a new machine learning platform while leading and growing the team of data science engineers. As a result at the end of my tenure customer retention improved by 26%"<end example>
 Thoroughly and deeply analyse job description, aplicant's experience, and customary responsibility of the job title.
 Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one sentence.
 Output just the summary and nothing else.
