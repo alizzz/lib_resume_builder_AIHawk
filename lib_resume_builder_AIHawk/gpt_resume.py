@@ -2,13 +2,16 @@ import json
 import textwrap
 from datetime import datetime
 from typing import Dict, List
+
 from dotenv import load_dotenv
 from langchain_core.messages.ai import AIMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompt_values import StringPromptValue
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+
 from lib_resume_builder_AIHawk.config import global_config
+
 load_dotenv()
 
 

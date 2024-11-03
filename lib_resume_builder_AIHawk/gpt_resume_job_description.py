@@ -1,36 +1,29 @@
-import json
-import os
 import random
-import tempfile
-import textwrap
-import time
-import re
 import copy
 import os
 import os.path
+import random
+import re
 import sys
+import tempfile
+import time
 import traceback
-import inspect
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import Dict, List
+
+from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_core.messages.ai import AIMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompt_values import StringPromptValue
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
-from langchain_text_splitters import TokenTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from dotenv import load_dotenv
-from concurrent.futures import ThreadPoolExecutor, as_completed
-#from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
-import lib_resume_builder_AIHawk.resume_templates.resume_template
-from lib_resume_builder_AIHawk.utils import printcolor, printred, printyellow, read_format_string, get_content
-from lib_resume_builder_AIHawk.config import global_config
-from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase, LLMLogger, LoggerChatModel, clean_html_string
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_text_splitters import TokenTextSplitter
 
+from lib_resume_builder_AIHawk.config import global_config
+from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase, clean_html_string
+# from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
+from lib_resume_builder_AIHawk.utils import printcolor, printred, read_format_string, get_content
 
 load_dotenv()
 # ToDo: make it read config file
@@ -234,7 +227,7 @@ class LLMResumeJobDescription(LLMResumerBase):
         additional_skills_prompt_template = self._preprocess_template_string(
             self.strings.prompt_additional_skills
         )
-        
+
         skills = set()
 
         if self.resume_.experience_details:
@@ -290,41 +283,41 @@ class LLMResumeJobDescription(LLMResumerBase):
         #print(f"skills output:{output}")
         return output
 
-
-    #generate static header based on applicant information
-    #ToDo: load from configuration
+    # generate static header based on applicant information
+    # ToDo: load from configuration
     def generate_applicant_name_header(self):
-        #use as a default output if unable to read the chunk from file
+        # use as a default output if unable to read the chunk from file
         output_ = f'<span class="applicant_name_header">{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</span> • <span class="phone">{self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone}</span> • <span class="email">{self.resume_.personal_information.email}</span>'
         output = None
         try:
-            #< div id = "header" >< table >< tr >
-            #< td class ="left-aligned-column" >
+            # < div id = "header" >< table >< tr >
+            # < td class ="left-aligned-column" >
             # < span class ="applicant_name_header" > {name_prefix}{name} {surname}{name_suffix} < /span > < /td >
-            #< td class ="right-aligned-column" > < span class ="phone" > {phone_prefix}{phone} < /span >
-            #< span class ="table-cell-delimeter" > {delim_1} < /span >
+            # < td class ="right-aligned-column" > < span class ="phone" > {phone_prefix}{phone} < /span >
+            # < span class ="table-cell-delimeter" > {delim_1} < /span >
             # < span class ="email" > {email} < /span >
             # < span class ="table-cell-delimeter" > {delim_2} < /span >
             # < span class ="other_contacts" > {other_contacts} < /span > < /td > < / tr >< / table >< / div >
             fmt_params = {
-                'name_prefix':self.resume_.personal_information.name_prefix,
-                'name':self.resume_.personal_information.name,
-                'surname':self.resume_.personal_information.surname,
-                'name_suffix':self.resume_.personal_information.name_suffix,
-                'phone_prefix':self.resume_.personal_information.phone_prefix,
-                'phone':self.resume_.personal_information.phone,
-                'delim_1':' | ',
-                'email':self.resume_.personal_information.email
+                'name_prefix': self.resume_.personal_information.name_prefix,
+                'name': self.resume_.personal_information.name,
+                'surname': self.resume_.personal_information.surname,
+                'name_suffix': self.resume_.personal_information.name_suffix,
+                'phone_prefix': self.resume_.personal_information.phone_prefix,
+                'phone': self.resume_.personal_information.phone,
+                'delim_1': ' | ',
+                'email': self.resume_.personal_information.email
             }
-            file_name = os.path.join(global_config.TEMPLATES_DIRECTORY, 'chunks', global_config.html_template_chunk['name_header'])
+            file_name = os.path.join(global_config.TEMPLATES_DIRECTORY, 'chunks',
+                                     global_config.html_template_chunk['name_header'])
             fmt_string = read_format_string(file_name)
             output = fmt_string.format(**fmt_params)
         except Exception as e:
             printred(f'EXCEPTION in generate_applicant_name_header. Using default header Error {e}')
             printred(traceback.format_exc())
-        return output if output is not None and len(output)>0 else output_
+        return output if output is not None and len(output) > 0 else output_
 
-    #generate title based on position name
+    # generate title based on position name
     def generate_application_title_ai(self):
         application_title_template = self._preprocess_template_string(
             self.strings.prompt_application_title
@@ -334,11 +327,15 @@ class LLMResumeJobDescription(LLMResumerBase):
         output = chain.invoke({
             "job_description": self.job_description
         })
-        #removing non-alphanum from the beginning and end of the string
+        # removing non-alphanum from the beginning and end of the string
         clean_output = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9)]+$', '', output.split('(')[0])
         return clean_output
 
     def generate_position_hierarchy_ai(self):
+        return 'Sr. Director, Vice President, Sr. Vice President, CTO'
+
+    # Disabled for now. Generates standard Hierarchy
+    def _generate_position_hierarchy_ai(self):
         gpt_template = self._preprocess_template_string(
             self.strings.prompt_position_hierarchy
         )
@@ -354,25 +351,25 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
 
     def update_positions_automl(self):
-        def _position_automl(current_position:str, substitute_positions):
+        def _position_automl(current_position: str, substitute_positions):
             if substitute_positions is None: return current_position
             num_subs = len(substitute_positions)
             case_statements = {
                 "L0": substitute_positions[0],
-                "L1": substitute_positions[1] if num_subs>2 else substitute_positions[num_subs - 1],
-                "L2": substitute_positions[2] if num_subs>3 else substitute_positions[num_subs - 1],
-                "L3": substitute_positions[3] if num_subs>4 else substitute_positions[num_subs - 1],
-                "L4": substitute_positions[4] if num_subs>5 else substitute_positions[num_subs - 1]
+                "L1": substitute_positions[1] if num_subs > 2 else substitute_positions[num_subs - 1],
+                "L2": substitute_positions[2] if num_subs > 3 else substitute_positions[num_subs - 1],
+                "L3": substitute_positions[3] if num_subs > 4 else substitute_positions[num_subs - 1],
+                "L4": substitute_positions[4] if num_subs > 5 else substitute_positions[num_subs - 1]
             }
             return case_statements.get(current_position, current_position)
 
         for k in range(len(self.resume_.experience_details)):
             position = self.resume_.experience_details[k].position
-            if position in ["L0","L1","L2","L3"]:
+            if position in ["L0", "L1", "L2", "L3"]:
                 new_pos = _position_automl(position, self.pos_hierarchy_list)
                 self.resume_.experience_details[k].position = new_pos
 
-    #ToDo: read from config
+    # ToDo: read from config
     def generate_career_timeline(self):
         exp_timeline_long_table_default = """
                 <table width="760" cellpadding="0" cellspacing="0">
@@ -384,7 +381,7 @@ class LLMResumeJobDescription(LLMResumerBase):
                    {exp_timeline_html}
                 </table>
                 """
-        exp_timeline_long_row_default ="""<tr>
+        exp_timeline_long_row_default = """<tr>
             <td class='exp_details_company'>{exp.company}</td>
             <td class='exp_details_industry'>{exp.industry}</td>
            <td class='exp_details_position'>{exp.position}</td>
@@ -394,16 +391,14 @@ class LLMResumeJobDescription(LLMResumerBase):
 
         exp_timeline_html = ""
         for exp in self.resume_.experience_details:
-            html_chunk = global_config.get_html_chunk('exp_timeline_long_row',exp_timeline_long_row_default)
+            html_chunk = global_config.get_html_chunk('exp_timeline_long_row', exp_timeline_long_row_default)
             exp_m = global_config.unpack_members(exp)
-            exp_timeline_html+=html_chunk.format(**exp_m)
+            exp_timeline_html += html_chunk.format(**exp_m)
 
-        output_html_raw = global_config.get_html_chunk('exp_timeline_long_table',default=exp_timeline_long_table_default)
+        output_html_raw = global_config.get_html_chunk('exp_timeline_long_table', default=exp_timeline_long_table_default)
         output_html_raw = output_html_raw.format(exp_timeline_html=exp_timeline_html)
         output = clean_html_string(output_html_raw)
         return output
-
-
 
     def generate_education_summary(self):
         edu_timeline_html_default = """<h2 class="education-header">Education and Training</h2>
@@ -428,8 +423,7 @@ class LLMResumeJobDescription(LLMResumerBase):
         except Exception as e:
             print(f'Exception in generate_education_summary. Error: {e}')
 
-        output = clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
-        return output
+        return clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
 
     def generate_language_skills_section(self):
         #print("in generate_language_skills_section")

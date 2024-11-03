@@ -1,10 +1,12 @@
-import os
 import datetime
-from pathlib import Path
-from pydantic import BaseModel, EmailStr, HttpUrl
-from typing import List, Dict, Optional, Union
-from dotenv import load_dotenv
 import inspect
+import os
+from pathlib import Path
+from typing import Optional
+
+from dotenv import load_dotenv
+from pydantic import BaseModel, HttpUrl
+
 from lib_resume_builder_AIHawk.utils import get_dict_names_from_dir
 
 load_dotenv()

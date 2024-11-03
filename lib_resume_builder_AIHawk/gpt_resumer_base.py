@@ -1,35 +1,15 @@
 import json
-import os
-import random
-import tempfile
-import textwrap
-import time
 import re
-import copy
-import os
-import os.path
-import sys
-import traceback
-import inspect
+import textwrap
 from datetime import datetime
 from typing import Dict, List
-from langchain_community.document_loaders import TextLoader
-from langchain_core.messages.ai import AIMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompt_values import StringPromptValue
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
-from langchain_text_splitters import TokenTextSplitter
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from dotenv import load_dotenv
-from concurrent.futures import ThreadPoolExecutor, as_completed
-#from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
-import lib_resume_builder_AIHawk.resume_templates.resume_template
-from lib_resume_builder_AIHawk.utils import printcolor, printred, printyellow, read_format_string, get_content
-from lib_resume_builder_AIHawk.config import global_config
 
+from langchain_core.messages.ai import AIMessage
+from langchain_core.prompt_values import StringPromptValue
+from langchain_openai import ChatOpenAI
+
+# from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
+from lib_resume_builder_AIHawk.config import global_config
 
 
 # removes \n and multiple spaces from a string

@@ -1,4 +1,3 @@
-import base64
 import os
 from pathlib import Path
 import tempfile
@@ -6,6 +5,16 @@ import inquirer
 from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.utils import HTML_to_PDF
 import webbrowser
+import os
+import tempfile
+import webbrowser
+from pathlib import Path
+
+import inquirer
+
+from lib_resume_builder_AIHawk.config import global_config
+from lib_resume_builder_AIHawk.utils import HTML_to_PDF
+
 
 class FacadeManager:
     def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path, selected_style = None):

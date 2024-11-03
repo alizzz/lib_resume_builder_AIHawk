@@ -1,12 +1,14 @@
-from typing import Any
+from string import Template
+import os
+import re
 from string import Template
 from typing import Any
+
+from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.gpt_resume import LLMResumer
 from lib_resume_builder_AIHawk.gpt_resume_job_description import LLMResumeJobDescription
 from lib_resume_builder_AIHawk.module_loader import load_module
-from lib_resume_builder_AIHawk.config import global_config
-import os
-import re
+
 
 class ResumeGenerator:
     def __init__(self):

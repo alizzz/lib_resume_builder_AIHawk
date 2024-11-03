@@ -1,8 +1,6 @@
-import os
-import re
-from lib_resume_builder_AIHawk import Resume
-from lib_resume_builder_AIHawk.config import GlobalConfig
 from dotenv import load_dotenv
+
+from lib_resume_builder_AIHawk.config import GlobalConfig
 
 global_config = GlobalConfig()
 load_dotenv()

@@ -3,13 +3,12 @@ import re
 import time
 import traceback
 
+from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-
-import time
 from webdriver_manager.chrome import ChromeDriverManager
+
 
 def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
     #allowed pattern allows valid file names excluding those that start with ., _, __, and end with .py

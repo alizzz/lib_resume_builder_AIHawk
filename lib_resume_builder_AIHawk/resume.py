@@ -1,6 +1,8 @@
+from typing import List, Dict, Optional, Union
+
 import yaml
 from pydantic import BaseModel, EmailStr, HttpUrl
-from typing import List, Dict, Optional, Union
+
 
 # Definizione dei modelli Pydantic
 class PersonalInformation(BaseModel):
