@@ -1,5 +1,5 @@
 <table id="header-table">
     <tr><td class="left-aligned-column"><span class="applicant_name_header">{name_prefix}{name} {surname}{name_suffix}</span></td>
-        <td class="right-aligned-column"><span class="phone">{phone}</span><span class="table-cell-delimeter">{delim_1}</span><span class="email">{email}</span></td>
+        <td class="right-aligned-column"><span class="phone">{phone}</span><span class="table-cell-delimeter"> | </span><span class="email">{email}</span></td>
     </tr>
 </table>

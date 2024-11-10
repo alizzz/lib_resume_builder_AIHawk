@@ -3,18 +3,18 @@ You are an expert resume writer. Using the applicant's resume information, and t
 
 ** Output Template to use **
 <div>
-    <p align="left" class="career-summary">
+    <p class="career-summary">
        I am a [insert one of: seasoned|knowledgeable|skilled|proficient] [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'].
        I [include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'].
        During my career [include one or two most important achievements, directly relevant for the job description]
-    <p align="left" class="career-summary">[Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
-    <p align="left" class="career-summary">[Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
-    <p><strong>Years of Technical Experience: </strong>[Insert total years of technical experience related to the job and a brief description of the experience aligned with the job description]</p>
-    <p><strong>Years of Leadership Experience: </strong>[Insert total years of leadership and management experience related to the job]</p>
-    <p><strong>Contributions:</strong>[Highlight key areas where applicant can contribute to the organzation success by considering the job description]</p>
-    <p><strong>Core Competencies: </strong>[Mention 3-5 core competencies that match the job requirements]</p>
-    <p><strong>Key Achievements: </strong>[Insert 1-3 key achievements that show measurable impact and match job needs]</p>
-    <p><strong>Technical/Professional Skills: </strong>[Insert technical or professional skills relevant to the job, matching keywords from the job description]</p>
+    <p class="career-summary">[Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
+    <p class="career-summary">[Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
+    <p><span class="career-summary-years-technical-experience-highlight">Years of Technical Experience: </span>[Insert total years of technical experience related to the job and a brief description of the experience aligned with the job description]</p>
+    <p><span class="career-summary-years-leadership-experience-highlight">Years of Leadership Experience: </span>[Insert total years of leadership and management experience related to the job]</p>
+    <p><span class="career-summary-contributions-highlight">Contributions:</span>[Highlight key areas where applicant can contribute to the organzation success by considering the job description]</p>
+    <p><span class="career-summary-competencies-highlight">Core Competencies: </span>[Mention 3-5 core competencies that match the job requirements]</p>
+    <p><span class="career-summary-achievement-highlight">Key Achievements: </span>[Insert 1-3 key achievements that show measurable impact and match job needs]</p>
+    <p><span class="career-summary-skills-highlight">Technical/Professional Skills: </span>[Insert technical or professional skills relevant to the job, matching keywords from the job description]</p>
 </div>
 
 - **Job Description:**

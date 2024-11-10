@@ -37,13 +37,17 @@ def text_from_html(html:str) ->str:
     return text
 
 class LLMCoverJobDescription(LLMResumerBase):
-    def __init__(self, openai_api_key, strings):
+    def __init__(self, openai_api_key, strings, resume = None, job_desc:str=None):
+        # LLMResumerBase creates the following three members
         #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
         #self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
         #self.strings = strings
         super().__init__(openai_api_key=openai_api_key, strings=strings)
-        self.resume_ = None
-        self.job = None
+        self.resume_ = resume
+        self.job_desc = job_desc
+
+    def set_job_description(self, job_desc:str):
+        self.job = job_desc
 
     def set_resume(self, resume):
         self.resume_ = copy.deepcopy(resume)
@@ -67,7 +71,7 @@ class LLMCoverJobDescription(LLMResumerBase):
 
         header_prompt_template = self._preprocess_template_string(cover_letter_prompt)
         prompt = ChatPromptTemplate.from_template(header_prompt_template)
-        chain = prompt | self.llm | StrOutputParser()
+        chain = prompt | self.llm_good | StrOutputParser()
         output = chain.invoke({
             "name_prefix": personal_information.name_prefix,
             "name": personal_information.name,

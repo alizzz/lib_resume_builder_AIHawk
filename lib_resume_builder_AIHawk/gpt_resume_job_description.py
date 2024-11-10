@@ -36,6 +36,7 @@ fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templat
 
 class LLMResumeJobDescription(LLMResumerBase):
     def __init__(self, openai_api_key, strings):
+        #LLMResumerBase creates the following three
         #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
         #self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
         #self.strings = strings
@@ -43,7 +44,24 @@ class LLMResumeJobDescription(LLMResumerBase):
         self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.pos_hierarchy_list = None
         self.resume_ = None
+        self.job_desc = None
 
+    def get_prompt(self, prompt_key, default_value):
+        try:
+            prompt_file = global_config.prompt_dict.get(prompt_key)
+            if prompt_file is None:
+                 raise FileNotFoundError()
+
+            with open(prompt_file, mode='r', encoding='utf-8') as f:
+                prompt_content = f.read()
+                if prompt_content is not None:
+                    print(f'Retrieved prompt from file {prompt_key}')
+                    return prompt_content
+        except:
+            pass
+
+        print(f'Unable to retrieve prompt from file {prompt_key}. Returning value from strings.py')
+        return default_value
 
     #@staticmethod
     #def _preprocess_template_string(template: str) -> str:
@@ -90,7 +108,9 @@ class LLMResumeJobDescription(LLMResumerBase):
         context_formatter = vectorstore.as_retriever() | format_docs
         question_passthrough = RunnablePassthrough()
         chain_job_description= prompt | self.llm_cheap | StrOutputParser()
-        summarize_prompt_template = self._preprocess_template_string(self.strings.summarize_prompt_template)
+        #reads from prompts\job_description_summary.prompts if available. Otherwise uses self.strings.summarize_prompt_template
+        summarize_prompt_template = self._preprocess_template_string(
+            self.get_prompt('job_description_summary' ,self.strings.summarize_prompt_template))
         prompt_summarize = ChatPromptTemplate.from_template(summarize_prompt_template)
         chain_summarize = prompt_summarize | self.llm_cheap | StrOutputParser()
         qa_chain = (
@@ -114,9 +134,9 @@ class LLMResumeJobDescription(LLMResumerBase):
         self.job_description = output
 
     def _generate_header_gpt(self) -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         header_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_header
-        )
+            self.get_prompt('header', self.strings.summarize_prompt_template))
         prompt = ChatPromptTemplate.from_template(header_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
@@ -134,9 +154,11 @@ class LLMResumeJobDescription(LLMResumerBase):
 
     def generate_education_section(self) -> str:
         print("In generate_education_section")
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         education_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_education
-        )
+            self.get_prompt('education_history',
+                            self.strings.prompt_education))
+
         prompt = ChatPromptTemplate.from_template(education_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
@@ -146,9 +168,10 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
     def generate_career_summary_ai(self)->str:
         print('In: generate_career_summary_ai()' )
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         career_summary_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_career_summary
-        )
+            self.get_prompt('career_summary',
+                            self.strings.prompt_career_summary))
 
         prompt = ChatPromptTemplate.from_template(career_summary_prompt_template)
         chain = prompt | self.llm_good | StrOutputParser()
@@ -162,9 +185,10 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
 
     def generate_work_experience_section_summary_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         work_experience_summary_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_professional_experience_role_summary
-        )
+            self.get_prompt('professional_experience_role_summary', self.strings.prompt_professional_experience_role_summary))
+
         prompt = ChatPromptTemplate.from_template(work_experience_summary_prompt_template)
         chain = prompt | self.llm_good | StrOutputParser()
         raw_output = chain.invoke({
@@ -177,9 +201,10 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
 
     def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="", n_lines = random.choice([3,4,5])) -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         work_experience_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_work_experience
-        )
+            self.get_prompt('work_experience', self.strings.prompt_work_experience))
+
         prompt = ChatPromptTemplate.from_template(work_experience_prompt_template)
         chain = prompt | self.llm_good | StrOutputParser()
         raw_output = chain.invoke({
@@ -193,9 +218,10 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
 
     def generate_side_projects_section(self) -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         side_projects_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_side_projects
-        )
+            self.get_prompt('side_projects', self.strings.prompt_side_projects))
+
         prompt = ChatPromptTemplate.from_template(side_projects_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
@@ -205,9 +231,10 @@ class LLMResumeJobDescription(LLMResumerBase):
         return output
 
     def generate_achievements_section(self) -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         achievements_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_achievements
-        )
+            self.get_prompt('achievements', self.strings.prompt_achievements))
+
 
         if self.resume_.achievements:
             prompt = ChatPromptTemplate.from_template(achievements_prompt_template)
@@ -224,9 +251,9 @@ class LLMResumeJobDescription(LLMResumerBase):
         def split_string(s, sep=','):
             return [x.strip() for x in s.split(sep)]
 
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         additional_skills_prompt_template = self._preprocess_template_string(
-            self.strings.prompt_additional_skills
-        )
+            self.get_prompt('additional_skills', self.strings.prompt_additional_skills))
 
         skills = set()
 
@@ -285,7 +312,7 @@ class LLMResumeJobDescription(LLMResumerBase):
 
     # generate static header based on applicant information
     # ToDo: load from configuration
-    def generate_applicant_name_header(self):
+    def generate_applicant_name_header(self, delim = ' | '):
         # use as a default output if unable to read the chunk from file
         output_ = f'<span class="applicant_name_header">{self.resume_.personal_information.name} {self.resume_.personal_information.surname}</span> • <span class="phone">{self.resume_.personal_information.phone_prefix} {self.resume_.personal_information.phone}</span> • <span class="email">{self.resume_.personal_information.email}</span>'
         output = None
@@ -305,7 +332,7 @@ class LLMResumeJobDescription(LLMResumerBase):
                 'name_suffix': self.resume_.personal_information.name_suffix,
                 'phone_prefix': self.resume_.personal_information.phone_prefix,
                 'phone': self.resume_.personal_information.phone,
-                'delim_1': ' | ',
+                'delim_1': delim,
                 'email': self.resume_.personal_information.email
             }
             file_name = os.path.join(global_config.TEMPLATES_DIRECTORY, 'chunks',
@@ -319,9 +346,10 @@ class LLMResumeJobDescription(LLMResumerBase):
 
     # generate title based on position name
     def generate_application_title_ai(self):
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         application_title_template = self._preprocess_template_string(
-            self.strings.prompt_application_title
-        )
+            self.get_prompt('application_title', self.strings.prompt_application_title))
+
         prompt = ChatPromptTemplate.from_template(application_title_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
@@ -336,9 +364,9 @@ class LLMResumeJobDescription(LLMResumerBase):
 
     # Disabled for now. Generates standard Hierarchy
     def _generate_position_hierarchy_ai(self):
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         gpt_template = self._preprocess_template_string(
-            self.strings.prompt_position_hierarchy
-        )
+            self.get_prompt('position_hierarchy', self.strings.prompt_position_hierarchy))
         prompt = ChatPromptTemplate.from_template(gpt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         hierarchy_string = chain.invoke({
@@ -586,6 +614,7 @@ class LLMResumeJobDescription(LLMResumerBase):
             return self.generate_additional_skills_section()
 
         def applicant_name_header_fn():
+
             return self.generate_applicant_name_header()
 
         def application_title_fn():

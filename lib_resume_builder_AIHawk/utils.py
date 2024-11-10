@@ -19,7 +19,7 @@ def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[
             # Split the file name and extension
             file_name_without_ext, file_ext = os.path.splitext(file)
             if bool(re.match(allowed_pattern, file)):
-                file_dict[file_name_without_ext] = file
+                file_dict[file_name_without_ext] = os.path.join(root,file)
     return file_dict
 
 def get_dict_values_from_files(directory_path: str = '',

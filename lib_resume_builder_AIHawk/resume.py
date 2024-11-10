@@ -30,6 +30,10 @@ class EducationDetails(BaseModel):
     field_of_study: Optional[str]
     exam: Optional[Union[List[Dict[str, str]], Dict[str, str]]]
 
+class Achievement(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+
 class ExperienceDetails(BaseModel):
     position: Optional[str]
     company: Optional[str]
@@ -39,15 +43,12 @@ class ExperienceDetails(BaseModel):
     summary: Optional[str]
     key_responsibilities: Optional[List[str]]
     skills_acquired: Optional[List[str]]
+    #achievements: Optional[List[Achievement]]
 
 class Project(BaseModel):
     name: Optional[str]
     description: Optional[str]
     link: Optional[HttpUrl]
-
-class Achievement(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
 
 class Language(BaseModel):
     language: Optional[str]

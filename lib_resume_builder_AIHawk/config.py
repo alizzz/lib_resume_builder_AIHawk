@@ -61,7 +61,8 @@ class GlobalConfig:
         self.API_KEY: str = os.environ.get('API_KEY', None)
         self.CONTEXT: Context = os.environ.get('CONTEXT', None)
         self.html_template_chunk = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'resume_templates', 'chunks'))
-        self.prompt_dict = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'resume_prompt'))
+        self.prompt_dict = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'prompts'))
+
         #{
         #    'name_header': 'name_header.chunk',
         #    'exp_timeline_long_row':'exp_timeline_long_row.chunk',

@@ -1,0 +1,4 @@
+You are an expert job description analyst. Carefully analyze provided job description and create the most relevant position title. Return just the title:
+
+**Job Description**
+{job_description}

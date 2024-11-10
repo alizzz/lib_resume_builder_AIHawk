@@ -1,0 +1,24 @@
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns with the provided job description, applicant's experience, applicant's skills, and the job title.
+Ensure that the created work experience summary builds on top of relevant applicant's experience and aligns well with the job description. Be specific and relevant to this position.
+For example, it may say:
+<begin example>I built a new machine learning platform while leading and growing the team of data science engineers<end example>
+<begin example>I created a decision support framework that became a main source of sustainable competitive advantage for the company. I lead and developed the high performing team of data scientists and engineers with the highest employee satisfaction score in the company<end example>
+
+You should use variants of the phrase 'I led the ...', or 'I directed the team efforts to ...', or 'I guided the team to ...', or 'I managed the development of ...', or 'I was responsible for ...', or 'I oversaw the execution of...', or 'I took ownership of ...', or 'I championed the development of ...', 'I played a key role in orchestrating the development of ...', or 'I provided strategy and execution leadership for the ...' and so on. Choose one of them randomly, or rephrase it.
+
+It will involve a thorough and deep analysis of job description, aplicant's experience, and customary responsibility of the job title.
+Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one sentence. Do not repeat examples verbatim.
+Output just the summary and nothing else.
+
+**Job Description:**
+{job_desc}
+
+**Applicant's Work Experience:**
+{work_experience}
+
+**Job Title:**
+{position_title}
+
+**Applicant's Skills**
+{skills}

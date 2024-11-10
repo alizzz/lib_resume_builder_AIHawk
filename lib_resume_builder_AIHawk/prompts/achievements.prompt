@@ -10,11 +10,10 @@ Act as an HR expert and resume writer with a specialization in creating ATS-frie
 - **Template to Use**
 ```
 <section id="achievements">
-    <h2>Achievements</h2>
     <ul class="compact-list">
-      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
-      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
-      <li><strong>[Award or Recognition or Scholarship or Honor]:</strong> [Describe]</li>
+      <li><span class="text-highlight">[Award or Recognition or Scholarship or Honor]:</span> [Describe]</li>
+      <li><span class="text-highlight">[Award or Recognition or Scholarship or Honor]:</span> [Describe]</li>
+      <li><span class="text-highlight">[Award or Recognition or Scholarship or Honor]:</span> [Describe]</li>
     </ul>
 </section>
 ```
