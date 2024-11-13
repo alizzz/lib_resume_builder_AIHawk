@@ -58,8 +58,9 @@ class ResumeGenerator:
         gpt_answerer.set_job_description_from_url(url_job_description)
         self._create_resume(gpt_answerer, style_path, temp_html_path)
 
-    def create_resume_job_description_text(self, style_path: str, job_description_text: str, temp_html_path):
+    def create_resume_job_description_text(self, style_path: str, job_description_text: str, job_title:str, temp_html_path):
         strings = load_module(global_config.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH, global_config.STRINGS_MODULE_NAME)
         gpt_answerer = LLMResumeJobDescription(global_config.API_KEY, strings)
         gpt_answerer.set_job_description_from_text(job_description_text)
+        gpt_answerer.set_job_title(job_title)
         self._create_resume(gpt_answerer, style_path, temp_html_path)

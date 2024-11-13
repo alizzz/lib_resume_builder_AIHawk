@@ -121,9 +121,18 @@ class LLMResumerBase:
         self.strings = strings
 
     @staticmethod
-    def _preprocess_template_string(template: str) -> str:
+    def _preprocess_template_string(template: str, add_format_instructions_template:bool=False, format_instructions:str=None) -> str:
         # Preprocess a template string to remove unnecessary indentation.
+        ret = textwrap.dedent(template)
+        if format_instructions:
+            return ret+"\n\n"+format_instructions
+        else:
+            if add_format_instructions_template:
+                return ret + "\n\nFormat Instructions:\n{format_instructions}"
         return textwrap.dedent(template)
+
+
+
 
 
 

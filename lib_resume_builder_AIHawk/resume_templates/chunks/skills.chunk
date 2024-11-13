@@ -1,0 +1,8 @@
+<h1 class="section-header">Skills and Competencies</h1>
+<div title="skills" class="skills">
+    <div class="skills">
+        <ul class="compact-list skills">
+            {skills}
+        </ul>
+    </div>
+</div>

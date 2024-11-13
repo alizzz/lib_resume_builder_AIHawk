@@ -264,3 +264,101 @@ Highlight the most important parts.
 The results should be provided in html format, 
 Provide only the html code for the resume, without any explanations or additional text and also without ```html ```
 """
+
+career_highlights_prompt = """
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to create a professional and polished list of highlights for the applicant's resume that is closely aligned with job requirements and demonstrate an excellent fit of the applicant to the job.
+Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
+Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a list of highlights, and nothing else
+In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
+Ensure that the highlights are clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***
+    Years of Technical Experience: {years_technical_experience}. <Insert a very brief, not more than 20 words, description of the experience aligned with the job description>
+    Years of Leadership Experience: {years_leadership_experience} <Insert a very brief leadership and management experience building high-performance distributed teams related to the job>
+    Contributions: <Highlight key areas where applicant can contribute to the organzation success by considering the job description>
+    Core Competencies: <Mention 3-5 core competencies that match the job requirements>
+    Key Achievements: <Insert 1-3 key achievements that show measurable impact and match job needs>
+    Technical/Professional Skills: <Insert a brief technical or professional skills relevant to the job, matching keywords from the job description></p>
+***
+
+Use the following materials:
+**Resume career summary**
+{career_summary}
+
+
+**Resume highlights**
+{career_highlights}
+
+
+**Years of technical experience**
+{years_of_technical_experience}
+
+
+**Years of management and leadership experience**
+{years_of_leaderhsip_experience}
+
+
+**Experience**
+{experiences}
+
+
+**Achievements**
+{achievements}
+
+
+**Skills**
+{skills}
+
+
+**Job Description**
+{job_description}
+"""
+
+prompt_career_summary_0="""
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to create a professional and polished list of highlights for the applicant's resume that is closely aligned with job requirements and demonstrate an excellent fit of the applicant to the job.
+Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
+Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a list of highlights, and nothing else
+In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
+Ensure that the highlights are clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***
+    Years of Technical Experience: {years_technical_experience}. <Insert a very brief, not more than 20 words, description of the experience aligned with the job description>
+    Years of Leadership Experience: {years_leadership_experience} <Insert a very brief leadership and management experience building high-performance distributed teams related to the job>
+    Contributions: <Highlight key areas where applicant can contribute to the organzation success by considering the job description>
+    Core Competencies: <Mention 3-5 core competencies that match the job requirements>
+    Key Achievements: <Insert 1-3 key achievements that show measurable impact and match job needs>
+    Technical/Professional Skills: <Insert a brief technical or professional skills relevant to the job, matching keywords from the job description></p>
+***
+
+Use the following materials:
+**Resume career summary**
+{career_summary}
+
+
+**Resume highlights**
+{career_highlights}
+
+
+**Years of technical experience**
+{years_of_technical_experience}
+
+
+**Years of management and leadership experience**
+{years_of_leaderhsip_experience}
+
+
+**Experience**
+{experiences}
+
+
+**Achievements**
+{achievements}
+
+
+**Skills**
+{skills}
+
+
+**Job Description**
+{job_description}
+"""

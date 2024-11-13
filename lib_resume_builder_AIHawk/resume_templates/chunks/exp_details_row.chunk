@@ -1,0 +1,20 @@
+<div class="professional-experience-row">
+    <div class="professional_experience_item page-no-break">
+        <table  class="table-full-width">
+                    <colgroup>
+                      <col style="width: 20%;">
+                      <col style="width: 50%;">
+                      <col style="width: 20%;">
+                      <col style="width: 10%;">
+                    </colgroup>
+            <tr> <td><span class="exp_details_company">{company}</span></td>
+                 <td><span class="exp_details_position">{position}</span></td>
+                <td><span class="exp_details_location">{location}</span></td>
+                <td><span class="exp_details_history">{employment_period}</span></td>
+            </tr>
+        </table>
+        <div class="prof-exp-summary">{exp_summary}</div>
+        <div class="professional_exp_responsibility">{exp_key_resps}</div>
+        <div class="exp_skills">{exp_skills}</div>
+    </div>
+</div>

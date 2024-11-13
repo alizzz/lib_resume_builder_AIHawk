@@ -1,0 +1,46 @@
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to create a professional and polished summary for the applicant's resume that is closely aligned with job requirements and demonstrate an excellent fit of the applicant to the job.
+Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
+Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a summary, and nothing else
+In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
+Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***
+I am a <insert one of: seasoned|knowledgeable|skilled|proficient> <insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'>.
+I <include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'>.
+During my career <include one or two most important achievements, directly relevant for the job description>
+<Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
+<Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
+***
+
+
+Use the following materials:
+**Resume career summary**
+{career_summary}
+
+
+**Resume highlights**
+{career_highlights}
+
+
+**Years of technical experience**
+{years_of_technical_experience}
+
+
+**Years of management and leadership experience**
+{years_of_leaderhsip_experience}
+
+
+**Experience**
+{experiences}
+
+
+**Achievements**
+{achievements}
+
+
+**Skills**
+{skills}
+
+
+**Job Description**
+{job_description}

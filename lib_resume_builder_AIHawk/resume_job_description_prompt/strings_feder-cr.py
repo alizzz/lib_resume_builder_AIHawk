@@ -392,6 +392,8 @@ Include only relevant information to match the job description against the resum
 
 # Analysis Requirements
 Your analysis should include the following sections:
+Job Title: Provide job title in the job description
+Relevant Title: Provide job title that is the most closely matched to the original job title, but generic for the industry and does not contain any specific attributes
 Technical Skills: List all the specific technical skills required for the role based on the responsibilities described in the job description.
 Soft Skills: Identify the necessary soft skills, such as communication abilities, problem-solving, time management, etc.
 Educational Qualifications and Certifications: Specify the essential educational qualifications and certifications for the role.
@@ -399,8 +401,8 @@ Professional Experience: Describe the relevant work experiences that are require
 Additional Requirements: Add all other requirements and qualifications that employer seeks in the candidate
 
 # Final Result:
-Your analysis should be structured in a clear and organized document with distinct sections for each of the points listed above. Each section should contain:
-This comprehensive overview will serve as a guideline for the recruitment process, ensuring the identification of the most qualified candidates.
+Your analysis should be structured in a clear and organized document with distinct sections for each of the points listed above. 
+
 
 # Job Description:
 ```
@@ -458,4 +460,120 @@ If there is not enough levels to output for the four positions, output as many a
 
 **Job Description**
 {job_description}
+"""
+
+career_highlights_prompt = """
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to create a professional and polished list of highlights for the applicant's resume that is closely aligned with job requirements and demonstrate an excellent fit of the applicant to the job.
+Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
+Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a list of highlights, and nothing else
+In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
+Ensure that the highlights are clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***
+    Years of Technical Experience: {years_technical_experience}. <Insert a very brief, not more than 20 words, description of the experience aligned with the job description>
+    Years of Leadership Experience: {years_leadership_experience} <Insert a very brief leadership and management experience building high-performance distributed teams related to the job>
+    Contributions: <Highlight key areas where applicant can contribute to the organzation success by considering the job description>
+    Core Competencies: <Mention 3-5 core competencies that match the job requirements>
+    Key Achievements: <Insert 1-3 key achievements that show measurable impact and match job needs>
+    Technical/Professional Skills: <Insert a brief technical or professional skills relevant to the job, matching keywords from the job description></p>
+***
+
+Use the following materials:
+**Resume career summary**
+{career_summary}
+
+
+**Resume highlights**
+{career_highlights}
+
+
+**Years of technical experience**
+{years_of_technical_experience}
+
+
+**Years of management and leadership experience**
+{years_of_leaderhsip_experience}
+
+
+**Experience**
+{experiences}
+
+
+**Achievements**
+{achievements}
+
+
+**Skills**
+{skills}
+
+
+**Job Description**
+{job_description}
+"""
+
+prompt_career_summary_0="""
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to create a professional and polished list of highlights for the applicant's resume that is closely aligned with job requirements and demonstrate an excellent fit of the applicant to the job.
+Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
+Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a list of highlights, and nothing else
+In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
+Ensure that the highlights are clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***
+    Years of Technical Experience: {years_technical_experience}. <Insert a very brief, not more than 20 words, description of the experience aligned with the job description>
+    Years of Leadership Experience: {years_leadership_experience} <Insert a very brief leadership and management experience building high-performance distributed teams related to the job>
+    Contributions: <Highlight key areas where applicant can contribute to the organzation success by considering the job description>
+    Core Competencies: <Mention 3-5 core competencies that match the job requirements>
+    Key Achievements: <Insert 1-3 key achievements that show measurable impact and match job needs>
+    Technical/Professional Skills: <Insert a brief technical or professional skills relevant to the job, matching keywords from the job description></p>
+***
+
+Use the following materials:
+**Resume career summary**
+{career_summary}
+
+
+**Resume highlights**
+{career_highlights}
+
+
+**Years of technical experience**
+{years_of_technical_experience}
+
+
+**Years of management and leadership experience**
+{years_of_leaderhsip_experience}
+
+
+**Experience**
+{experiences}
+
+
+**Achievements**
+{achievements}
+
+
+**Skills**
+{skills}
+
+
+**Job Description**
+{job_description}
+"""
+
+prompt_work_experience_pydantic = """
+Act as an HR expert and experienced resume writer with a specialization in creating ATS-friendly resumes for executives.
+Your task is to thoroughly analyze job description, and provided draft of the work experience. Summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns well with the provided job description,  applicant's experience, applicant's skills, and the work experience title of Head of Data Science and ML Engineering .
+Change only summary responsibilities, key responsibilities, and skills. Copy Ensure that the created work experience summary builds on top of relevant applicant's experience and aligns well with the job description and applicant's title of work experience title of Head of Data Science and ML Engineering.
+Be specific and relevant to this position. Emphasize benefits to the business, such as improved customer satisfaction, employee retention, cost reduction, or other benefits to the business. Create specific examples
+For example,
+it may say: <begin example>"I built a new machine learning platform while leading and growing the team of data science engineers. As a result at the end of my tenure customer retention improved by 26%"<end example>
+Thoroughly and deeply analyse job description, aplicant's experience, and customary responsibility of the job title.
+Combine and merge it togheter in a very brief, concise, and a high level, executive like summary. Limit it to one or two sentences.
+Output results in accordance with format instructions below.
+
+**Job Description:**
+  {job_description}
+
+**Work Experience**
+  {work_experience}
 """

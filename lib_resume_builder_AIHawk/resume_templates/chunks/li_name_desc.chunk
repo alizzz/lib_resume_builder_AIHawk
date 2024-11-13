@@ -1,0 +1,1 @@
+<li class="{li_kv_class}"><span class="{li_kv_name_class}">{name}{li_kv_delim}</span><span class="{li_kv_desc_class}">{description}</span></li>

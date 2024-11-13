@@ -14,6 +14,8 @@ import inquirer
 
 from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.utils import HTML_to_PDF
+from lib_resume_builder_AIHawk.resume import Resume
+from lib_resume_builder_AIHawk.resume_html import HtmlResume
 
 
 class FacadeManager:
@@ -71,7 +73,11 @@ class FacadeManager:
             self.selected_style = selected_choice.split(' (')[0]
             print("\nSelected style: "+self.selected_style)
 
-    def pdf_base64(self, job_description_url=None, job_description_text=None, html_file_name=None, delete_html_file=True):
+#    def create_html_resume(self, job:Job):
+#        htmlResume = HtmlResume(self.resume_generator.resume_object, css = self.style_manager.get_style_path(self.selected_style) )
+#        pass
+
+    def pdf_base64(self, job_title=None,  job_description_url=None, job_description_text=None, html_file_name=None, delete_html_file=True):
         if (job_description_url is not None and job_description_text is not None):
             raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
 
@@ -90,7 +96,7 @@ class FacadeManager:
         elif job_description_url is not None and job_description_text is None:
             self.resume_generator.create_resume_job_description_url(style_path, job_description_url, html_file_name)
         elif job_description_url is None and job_description_text is not None:
-            self.resume_generator.create_resume_job_description_text(style_path, job_description_text, html_file_name)
+            self.resume_generator.create_resume_job_description_text(style_path, job_description_text, job_title, html_file_name)
         else:
                 return None
         pdf_base64 = HTML_to_PDF(html_file_name)

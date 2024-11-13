@@ -1,0 +1,2 @@
+<h2 class="education-timeline-header">Education</h2>
+<ul class="education-summary-timeline">{edu_summary_lines}</ul>

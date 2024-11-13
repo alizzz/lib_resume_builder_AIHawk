@@ -1,0 +1,6 @@
+<h1 class="section-header">Achievements and Awards</h1>
+<div align="left" class="acheivements">
+    <ul class="compact-list achievements">
+      {achievement_rows}
+    </ul>
+</div>

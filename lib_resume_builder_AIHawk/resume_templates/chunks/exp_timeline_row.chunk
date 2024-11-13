@@ -1,0 +1,7 @@
+<tr class="experience-details-timeline-row">
+    <td class="exp_details_company">{company}</td>
+    <td class="exp_details_industry">{industry}</td>
+    <td class="exp_details_position">{position}</td>
+    <td class="exp_details_location">{location}</td>
+    <td class="exp_details_period">{employment_period}</td>
+</tr>

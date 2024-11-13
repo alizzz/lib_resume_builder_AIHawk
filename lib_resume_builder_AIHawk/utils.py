@@ -2,13 +2,27 @@ import os
 import re
 import time
 import traceback
+import datetime
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+from langchain_core.messages import AIMessage, AIMessageChunk
 
+
+
+
+def list_of_strings_parser(ai_message: AIMessage):
+    if ai_message and ai_message.content:
+        return [x for x in ai_message.content.split('\n') if x]
+    return []
+
+def custom_json_serializer(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()  # Convert datetime to ISO string
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
     #allowed pattern allows valid file names excluding those that start with ., _, __, and end with .py

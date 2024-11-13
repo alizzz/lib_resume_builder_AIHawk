@@ -1,4 +1,4 @@
-import random
+import copy
 import copy
 import os
 import os.path
@@ -8,14 +8,11 @@ import sys
 import tempfile
 import time
 import traceback
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import List, Dict, Optional, Union
-from lib_resume_builder_AIHawk.resume import Resume, WorkExperience
-from lib_resume_builder_AIHawk.resume_html import HtmlResume
 
 from dotenv import load_dotenv
+from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -23,17 +20,17 @@ from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_text_splitters import TokenTextSplitter
-from langchain.output_parsers import CommaSeparatedListOutputParser, ListOutputParser
-from langchain_openai import ChatOpenAI
-from lib_resume_builder_AIHawk.OutputParsers import DelimitedListOutputParser
 
+from job import Job
+
+from lib_resume_builder_AIHawk.OutputParsers import DelimitedListOutputParser
 from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase, clean_html_string
-from lib_resume_builder_AIHawk.resume import KeyValue
+from lib_resume_builder_AIHawk.resume import CareerSummary, CareerHighlights, WorkExperience
+from lib_resume_builder_AIHawk.resume import Resume
 # from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 from lib_resume_builder_AIHawk.utils import printcolor, printred, read_format_string, get_content
-from lib_resume_builder_AIHawk.resume import CareerSummary, CareerHighlights, WorkExperience
-from lib_resume_builder_AIHawk.utils import list_of_strings_parser
+
 load_dotenv()
 # ToDo: make it read config file
 
@@ -42,7 +39,8 @@ template_file = os.path.join(os.path.dirname(__file__), 'resume_templates',
 css_file = os.path.join(os.path.dirname(__file__), 'resume_style', 'style_hawk.css')
 fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templates', 'hawk_resume_sample.html')
 
-class LLMResumeJobDescription(LLMResumerBase):
+
+class LLMResumeJob(LLMResumerBase):
     def __init__(self, openai_api_key, strings):
         #LLMResumerBase creates the following three
         #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
@@ -51,28 +49,8 @@ class LLMResumeJobDescription(LLMResumerBase):
         super().__init__(openai_api_key=openai_api_key, strings=strings)
         self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.pos_hierarchy_list = None
-        self.resume = None
-        self.job_desc = None
-        self.job_title = None
-
-        #setting up logger
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.DEBUG)
-
-        # Define handler and formatter
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s"
-        )
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-
-        # File handler
-        file_handler = logging.FileHandler("app_errors.log")
-        file_handler.setFormatter(formatter)
-
-        # Add both handlers to the logger
-        self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
+        self.resume:Resume = None
+        self.job:Job = None
 
     def get_prompt(self, prompt_key, default_value):
         try:
@@ -85,8 +63,8 @@ class LLMResumeJobDescription(LLMResumerBase):
                 if prompt_content is not None:
                     #print(f'Retrieved prompt from file {prompt_key}')
                     return prompt_content
-        except Exception as e:
-            self.logger.info('an exception')
+        except:
+            pass
 
         print(f'Unable to retrieve prompt from file {prompt_key}. Returning value from strings.py')
         return default_value
@@ -103,10 +81,13 @@ class LLMResumeJobDescription(LLMResumerBase):
         self.update_positions_automl()
         #printcolor(f"in LLMResumeJobDescription.set_resume::self.resume_.experience_details[0].position:{self.resume_.experience_details[0].position}, self.pos_hierarchy_list:':{self.pos_hierarchy_list}", "magenta")
 
-    def set_job_description_from_url(self, url_job_description):
+    def set_job(self, job:Job):
+        self.job = job
+
+    def set_job_from_url(self, url_job_description):
         printcolor(
             f'in LLMResumeJobDescription.set_job_description_from_url', "blue")
-
+    
         from lib_resume_builder_AIHawk.utils import create_driver_selenium
         driver = create_driver_selenium()
         driver.get(url_job_description)
@@ -151,11 +132,8 @@ class LLMResumeJobDescription(LLMResumerBase):
             | chain_summarize
         )
         result = qa_chain.invoke("Provide, full job description")
-        self.job_desc = result
+        self.job_description = result
         print(f'Job description:\n{result}')
-
-    def set_job_title(self, job_title:str):
-        self.job_title = job_title
 
 
     def set_job_description_from_text(self, job_description_text: object) -> object:
@@ -163,7 +141,6 @@ class LLMResumeJobDescription(LLMResumerBase):
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({"text": job_description_text})
         self.job_description = output
-        print("In set_job_description_from_text() executed summarize_prompt_template")
 
     def _generate_header_gpt(self) -> str:
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
@@ -225,67 +202,50 @@ class LLMResumeJobDescription(LLMResumerBase):
             work_experience = parser.invoke(output)
             print(f'Updated work experience: {work_experience.text()}')
         except Exception as e:
-            self.logger.error(f'Exception while processing work experience for {work_experience.position} at {work_experience.company}')
             printcolor(f'Exception while processing work experience for {work_experience.position} at {work_experience.company}', 'blue')
         return work_experience.text()
 
 
     def generate_career_highlights_ai(self)->str:
-        try:
-            print('In: generate_career_highlights_ai()' )
-            parser = DelimitedListOutputParser('\n--') # PydanticOutputParser(pydantic_object=CareerHighlights)
+        print('In: generate_career_highlights_ai()' )
+        parser = DelimitedListOutputParser('\n--') # PydanticOutputParser(pydantic_object=CareerHighlights)
 
 
-            # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-            p_= self.get_prompt(prompt_key='career_highlights',
-                                default_value=self.strings.career_highlights_prompt)
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
+        p_= self.get_prompt(prompt_key='career_highlights',
+                            default_value=self.strings.career_highlights_prompt)
 
-            prompt_template = self._preprocess_template_string(
-                p_, add_format_instructions_template=True)
+        prompt_template = self._preprocess_template_string(
+            p_, add_format_instructions_template=True)
 
-            prompt = PromptTemplate(
-                template=prompt_template,
-                input_variables=["career_summary", "career_highlights", "experiences", "achievements", "skills",
-                                 "years_of_technical_experience","years_of_leaderhsip_experience"],
-                partial_variables={"format_instructions": parser.get_format_instructions()},
-            )
-            career_summary =  '\n\nCareer Summary:\n'+'\n'.join(self.resume.career_summary)
-            career_highlights = '\n\nCareer Highlights:\n'+'\n'.join([h.text() for h in self.resume.career_highlights if h])
-            experiences = '' #'\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume_in.work_experiences.work_experiences if x])
-            achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
-            skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
+        prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=["career_summary", "career_highlights", "experiences", "achievements", "skills",
+                             "years_of_technical_experience","years_of_leaderhsip_experience"],
+            partial_variables={"format_instructions": parser.get_format_instructions()},
+        )
+        career_summary =  '\n\nCareer Summary:\n'+self.resume.career_summary.text()
+        career_highlights = '\n\nCareer Highlights:\n'+self.resume.career_highlights.text()
+        experiences = '' #'\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume.work_experiences.work_experiences if x])
+        achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
+        skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
 
-            chain = prompt | self.llm_cheap
-            output = chain.invoke({
-                "career_summary": career_summary,
-                "career_highlights": career_highlights,
-                "experiences": experiences,
-                "achievements": achievements,
-                "skills": skills,
-                "years_leadership_experience" : self.resume.personal_information.years_mgmt_experience,
-                "years_technical_experience" : self.resume.personal_information.years_technical_experience,
-                "job_description": self.job_description
-            })
+        chain = prompt | self.llm_cheap
+        output = chain.invoke({
+            "career_summary": career_summary,
+            "career_highlights": career_highlights,
+            "experiences": experiences,
+            "achievements": achievements,
+            "skills": skills,
+            "years_leadership_experience" : self.resume.personal_information.years_mgmt_experience,
+            "years_technical_experience" : self.resume.personal_information.years_technical_experience,
+            "job_description": self.job_description
+        })
 
-            ch = parser.invoke(output)
-            chh = []
-            for c in ch:
-                if c:
-                    if isinstance(c, CareerHighlights):
-                        chh.append(ch)
-                    if isinstance(c, str):
-                        cc = c.split(":")
-                        k = cc[0]
-                        v = cc[1] if len(cc)>0 else ""
-                        chh.append(KeyValue(key=k, value=v))
-
-            self.resume.career_highlights = chh
-            txt_out = '\n'.join(ch)
-            return txt_out
-        except Exception as e:
-            self.logger.error('Error in generate_career_highlights_ai')
-            print(f'Exception in generate_career_highlights_ai. Error {e}')
-            raise e
+        ch = parser.invoke(output)
+        self.resume_out.career_highlights = ch
+        txt_out = ch.text()
+        return txt_out
 
     def _generate_career_highlights_ai(self)->str:
         print('In: generate_career_highlights_ai()')
@@ -301,19 +261,19 @@ class LLMResumeJobDescription(LLMResumerBase):
 
 
         ch = self.llm_pydantic_invoke(self, pydantic_object=CareerHighlights, prompt_string_template=template_string, llm=self.llm_cheap,
-                                      career_summary=career_summary,
-                                      career_highlights = career_highlights,
-                                      experiences = experiences,
-                                      achievements=achievements,
-                                      skills=skills,
-                                      years_technical_experience = self.resume.personal_information.years_technical_experience,
-                                      years_leadership_experience = self.resume.personal_information.years_mgmt_experience,
-                                      job_description = self.job_description
-                                      )
+                                                     career_summary=career_summary,
+                                                     career_highlights = career_highlights,
+                                                     experiences = experiences,
+                                                     achievements=achievements,
+                                                     skills=skills,
+                                                     years_technical_experience = self.resume.personal_information.years_technical_experience,
+                                                     years_leadership_experience = self.resume.personal_information.years_mgmt_experience,
+                                                     job_description = self.job_description
+                                                     )
 
-        self.resume.career_highlights = ch
+        self.resume_out.career_highlights = ch
 
-        return self.resume.career_highlights.text()
+        return self.resume_out.career_highlights.text()
 
     def generate_career_summary_ai(self)->str:
         print('In: generate_career_summary_ai()' )
@@ -332,10 +292,10 @@ class LLMResumeJobDescription(LLMResumerBase):
                              "skills","job_description"],
             partial_variables={"format_instructions": parser.get_format_instructions()},
         )
-        career_summary =  '\n\nCareer Summary:\n'+'\n'.join(self.resume.career_summary)
-        career_highlights = '\n\nCareer Highlights:\n'+'\n'.join([h.key+':'+h.value for h in self.resume.career_highlights if h])
-        experiences = '\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.summary+'\n'.join(x.skills_acquired) for x in self.resume.work_experiences if x])
-        achievements = '\n\nAchievements:\n'+'\n'.join([x.name + ':' + x.description for x in self.resume.achievements if x])
+        career_summary =  '\n\nCareer Summary:\n'+self.resume.career_summary.text()
+        career_highlights = '\n\nCareer Highlights:\n'+self.resume.career_highlights.text()
+        experiences = '\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume.work_experiences.work_experiences if x])
+        achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
         skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
 
         chain = prompt | self.llm_cheap
@@ -351,8 +311,8 @@ class LLMResumeJobDescription(LLMResumerBase):
         })
 
         cs = parser.invoke(output)
-        self.resume.career_summary = cs.career_summary
-        return '\n'.join(self.resume.career_summary)
+        self.resume_out.career_summary = cs
+        return self.resume_out.career_summary.text()
 
     def generate_work_experience_section_summary_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
@@ -403,7 +363,7 @@ class LLMResumeJobDescription(LLMResumerBase):
     def generate_achievements_section(self) -> str:
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         achievements_prompt_template = self._preprocess_template_string(
-            self.get_prompt('achievements_html', self.strings.prompt_achievements))
+            self.get_prompt('achievements', self.strings.prompt_achievements))
 
 
         if self.resume.achievements:
@@ -427,10 +387,10 @@ class LLMResumeJobDescription(LLMResumerBase):
 
         skills = set()
 
-        if self.resume.work_experiences:
-            for we in self.resume.work_experiences:
-                if we.skills_acquired:
-                    skills.update(we.skills_acquired)
+        if self.resume.experience_details:
+            for exp in self.resume.experience_details:
+                if exp.skills_acquired:
+                    skills.update(exp.skills_acquired)
 
         if self.resume.education_details:
             for edu in self.resume.education_details:
@@ -439,9 +399,9 @@ class LLMResumeJobDescription(LLMResumerBase):
                         skills.update(exam.keys())
 
         #additional skills
-        skill_list = [x.text() for x in self.resume.skills]
+        skill_list = [x.skill_lst for x in self.resume.skills]
         for k in skill_list:
-            skills.update([s.strip() for s in k.split(',') if s])
+            skills.update([s.strip() for s in k.split(',')])
 
         #skill_elements = 'Programming, Python, SQL, R, C++, Java, Machine learning, deep learning, Tensorflow, Keras, Scikit-Learn, Natural Language Processing (NLP), Data analysis, statistics, Cloud platforms, AWS, Google Cloud, Big data, Hadoop, Spark'
         #skills.update([f'Technical:{x}' for x in split_string(skill_elements)])
@@ -510,7 +470,6 @@ class LLMResumeJobDescription(LLMResumerBase):
             fmt_string = read_format_string(file_name)
             output = fmt_string.format(**fmt_params)
         except Exception as e:
-            self.logger.error('EXCEPTION in generate_applicant_name_header. Using default header')
             printred(f'EXCEPTION in generate_applicant_name_header. Using default header Error {e}')
             printred(traceback.format_exc())
         return output if output is not None and len(output) > 0 else output_
@@ -566,7 +525,7 @@ class LLMResumeJobDescription(LLMResumerBase):
             position = self.resume.work_experiences[k].position
             if position in ["L0", "L1", "L2", "L3"]:
                 new_pos = _position_automl(position, self.pos_hierarchy_list)
-                self.resume.work_experiences[k].position = new_pos
+                self.resume_out.work_experiences[k].position = new_pos
 
     # ToDo: read from config
     def generate_career_timeline(self):
@@ -589,7 +548,7 @@ class LLMResumeJobDescription(LLMResumerBase):
          </tr>"""
 
         exp_timeline_html = ""
-        for exp in self.resume.work_experiences:
+        for exp in self.resume.experience_details:
             html_chunk = global_config.get_html_chunk('exp_timeline_long_row', exp_timeline_long_row_default)
             exp_m = global_config.unpack_members(exp)
             exp_timeline_html += html_chunk.format(**exp_m)
@@ -620,7 +579,6 @@ class LLMResumeJobDescription(LLMResumerBase):
             edu_li=''.join(edu_list)
             edu_timeline_html = edu_timeline_html_fmt.format(edu_li = edu_li)
         except Exception as e:
-            self.logger.error('Exception in generate_education_summary')
             print(f'Exception in generate_education_summary. Error: {e}')
 
         return clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
@@ -657,22 +615,20 @@ class LLMResumeJobDescription(LLMResumerBase):
                 if exp.key_responsibilities is not None:
                     key_resp = ('\n').join(exp.key_responsibilities)
             except Exception as e:
-                self.logger.error(f"Exception while processing key responsibiity for {exp.company}:{exp.position}")
                 printcolor(f"Exception while processing key responsibiity for {exp.company}:{exp.position}. Exception: {e}")
+
             try:
                 try:
                     skills += '\n'.join(exp.skills_acquired)
-                except Exception as e:
-                    self.logger.error('Processing skills acquired')
+                except: pass
+
                 try:
                     skills+=','.join([s.skill_lst for s in self.resume.skills])
-                except Exception as e:
-                    self.logger.error('Processing some skills')
+                except: pass
                 #if self.resume_.skills is not None:
                 #    for s in self.resume_.skills:
                 #        skills+=s.skill_lst
             except Exception as e:
-                self.logger.error(f"Exception while processing skills for {exp.company}:{exp.position}")
                 printcolor(f"Exception while processing skills for {exp.company}:{exp.position}. Exception: {e}")
 
             # --- Position Header
@@ -692,7 +648,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                     if exp_summary_ai is not None and len(exp_summary_ai)>0:
                         exp_html+= f"""<div align="justify" class="prof-exp-summary">{exp_summary_ai}</div>"""
                 except Exception as e:
-                    self.logger.error(f'Experience section summary thrown an exception for {exp.position} for {exp.company}')
                     exp_html += f"""<div align="justify" class="prof-exp-summary">{exp.summary}</div>"""
                     printcolor(f'Experience section summary thrown an exception for {exp.position} for {exp.company}. Exception {e}', "yellow")
 
@@ -703,7 +658,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                 if len(responsibility_html) > 0:
                     exp_html += f"""<ul class="professional_exp_responsibility">{responsibility_html}</ul>"""
             except Exception as e:
-                self.logger.error(f"Exception while processing work experience section for {exp.company}:{exp.position}")
                 printcolor(f"Exception while processing work experience section for {exp.company}:{exp.position}. Exception:{e}")
 
             raw_html += f"{exp_html}</div>"
@@ -734,7 +688,6 @@ class LLMResumeJobDescription(LLMResumerBase):
             try:
                 raw_html += f"""<div align="justify" class="prof-exp-details">{exp.summary}</div>"""
             except Exception as e:
-                self.logger.error(f'Experience summary is not set for {exp.position} for {exp.company}')
                 print(f'Experience summary is not set for {exp.position} for {exp.company}')
 
             #--- Position responsibilities ---#
@@ -744,7 +697,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                 for responsibility in exp.key_responsibilities:
                     responsibility_html +=f'<li><p align="justify">{responsibility}</p></li>'
             except Exception as e:
-                self.logger.error(f"Exception while processing responsibilities for {exp.position} for {exp.company}")
                 print(f"Exception while processing responsibilities for {exp.position} for {exp.company}. Exception {e}")
 
             if len(responsibility_html)>0:
@@ -769,7 +721,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                 with open(css_file, 'r') as f:
                     css = clean_html_string(f.read())
             except Exception as e:
-                self.logger.error(f"Error during opening css file: {css_file}")
                 print(f"Error during opening css file: {css_file}"
                       f"error: {e}")
             return css
@@ -797,10 +748,8 @@ class LLMResumeJobDescription(LLMResumerBase):
             return self.generate_applicant_name_header()
 
         def application_title_fn():
-            self.resume.resume_title = self.job_title
-            print(f'Setting resume title to {self.job_title}')
-            return self.resume.resume_title
-            #return self.generate_application_title_ai()
+
+            return self.generate_application_title_ai()
 
         def career_summary_fn():
 
@@ -820,9 +769,9 @@ class LLMResumeJobDescription(LLMResumerBase):
         def professional_experience_fn():
             #return self.generate_professional_experience()
             out = ''
-            for work_experience in self.resume.work_experiences:
+            for work_experience in self.resume_out.work_experiences.work_experiences:
                 we = self.generate_work_experience_ai(work_experience)
-                out+=f'\n\n{we}'
+                out+=f'\n\n{we.text()}'
             return out
         def academic_appointments_fn():
             return self.generate_academic_appointments()
@@ -848,9 +797,9 @@ class LLMResumeJobDescription(LLMResumerBase):
         functions = {
             #"applicant_name_header": applicant_name_header_fn,
             "application_title":application_title_fn,
-            "career_summary": career_summary_fn,
-            "career_highlights": career_highlights_fn,
-            "career_timeline":career_timeline_fn,
+            #"career_summary": career_summary_fn,
+            #"career_highlights": career_highlights_fn,
+            #"career_timeline":career_timeline_fn,
             #"education_summary":education_summary_fn,
             #"education": education_x_fn,
             "professional_experience":professional_experience_fn,
@@ -873,7 +822,6 @@ class LLMResumeJobDescription(LLMResumerBase):
                     try:
                         results[section] = future.result()
                     except Exception as exc:
-                        self.logger.error(f'{section} generated an error')
                         print(f'{section} generated an exception: {exc}')
         else:
             for section, fn in functions.items():
@@ -881,72 +829,65 @@ class LLMResumeJobDescription(LLMResumerBase):
                     try:
                         results[section] = fn()
                     except Exception as e:
-                        print(f'Exception while executing {section}. Error {e}, {traceback.format_exc()}')
-                        self.logger.error(f'Exception while executing {section}')
-
+                        print(f'Exception while executing {section}. Error {e}')
                 else:
                     results[section] = fn
 
-        fullresume = HtmlResume(self.resume).html()
-        if not fullresume:
-            fullresume_template=None
-            fullresume=None
+        fullresume_template=None
+        fullresume=None
+        try:
+            with open(template_file, 'r') as file:
+                fullresume_template = file.read().replace('\n', '')
+        except Exception as e:
+            print(f"Error during opening template file: {template_file}"
+                  f"error: {e}")
+
+        if fullresume_template is not None:
+            fullresume=fullresume_template.format(
+                applicant_name_header = results["applicant_name_header"],
+                application_title = results["application_title"],
+                career_summary = results["career_summary"],
+                career_timeline = results["career_timeline"],
+                education_summary = results["education_summary"],
+                professional_experience = results["professional_experience"],
+                achievements = results["achievements"],
+                education = results["education"],
+                skills = results["skills"],
+                languages = results["languages"]
+            )
+
+        else:
             try:
-                with open(template_file, 'r') as file:
-                    fullresume_template = file.read().replace('\n', '')
+                with open(fullresume_template, 'r') as file:
+                    fullresume = file.read().replace('\n', '')
             except Exception as e:
-                self.logger.error(f"Error during opening template file: {template_file}")
                 print(f"Error during opening template file: {template_file}"
                       f"error: {e}")
+                sys.exit()
 
-            if fullresume_template is not None:
-                fullresume=fullresume_template.format(
-                    applicant_name_header = results["applicant_name_header"],
-                    application_title = results["application_title"],
-                    career_summary = results["career_summary"],
-                    career_timeline = results["career_timeline"],
-                    education_summary = results["education_summary"],
-                    professional_experience = results["professional_experience"],
-                    achievements = results["achievements"],
-                    education = results["education"],
-                    skills = results["skills"],
-                    languages = results["languages"]
-                )
+        # Construct the final HTML resume from the results
 
-            else:
-                try:
-                    with open(fullresume_template, 'r') as file:
-                        fullresume = file.read().replace('\n', '')
-                except Exception as e:
-                    self.logger.error(f"Error during opening template file: {template_file}")
-                    print(f"Error during opening template file: {template_file}"
-                          f"error: {e}")
-                    sys.exit()
-
-            # Construct the final HTML resume from the results
-
-    #        fullresume = (
-    #            f"<body>\n"
-    #            f"  {results['header']}\n"
-    #            f"  <main>\n"
-    #            f"    {results['education']}\n"
-    #            f"    {results['work_experience']}\n"
-    #            f"    {results['side_projects']}\n"
-    #            f"    {results['achievements']}\n"
-    #            f"    {results['additional_skills']}\n"
-    #            f"  </main>\n"
-    #            f"</body>"
-     #       )
-            fname_full = os.path.join(os.path.dirname(__file__),'resume_output', create_filename())
-            print(f'constructed final html resume. Saving to the file: {fname_full}')
-            try:
-                # Save the file with the generated filename
-                with open(fname_full, 'w', encoding='utf-8') as file:
-                    file.write(fullresume)
-            except Exception as e:
-                self.logger.error(f"Error during saving html file: {fname_full}")
-                print(f"Error during saving html file: {fname_full}"
-                          f"error: {e}")
+#        fullresume = (
+#            f"<body>\n"
+#            f"  {results['header']}\n"
+#            f"  <main>\n"
+#            f"    {results['education']}\n"
+#            f"    {results['work_experience']}\n"
+#            f"    {results['side_projects']}\n"
+#            f"    {results['achievements']}\n"
+#            f"    {results['additional_skills']}\n"
+#            f"  </main>\n"
+#            f"</body>"
+ #       )
+        fname_full = os.path.join(os.path.dirname(__file__),'resume_output', create_filename())
+        print(f'constructed final html resume. Saving to the file: {fname_full}')
+        try:
+            # Save the file with the generated filename
+            with open(fname_full, 'w', encoding='utf-8') as file:
+                file.write(fullresume)
+        except Exception as e:
+            print(f"Error during saving html file: {fname_full}"
+                      f"error: {e}")
 
         return fullresume
 

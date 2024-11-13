@@ -1,0 +1,3 @@
+<h2 class="career-summary">Executive Summary</h2>
+<div class="career-summary-content">{career_summary}</div>
+<div class="career-summary-highlights">{career_summary_highlights}</div>
