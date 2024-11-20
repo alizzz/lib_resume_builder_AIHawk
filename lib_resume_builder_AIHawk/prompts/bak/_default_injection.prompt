@@ -1,0 +1,11 @@
+***Begin Job Description***
+Job Title: {job_title}
+Job Description: {job_description}
+***End Job Description***
+
+***Begin Applicant's career summary***
+Career Summary: {career_summary}
+Career Highlights: {career_highlights}
+Skills: {skills}
+Achiemvements: {achievements}
+***End Applicant's career summary***

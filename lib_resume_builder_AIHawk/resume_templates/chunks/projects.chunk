@@ -1,0 +1,8 @@
+<!--
+<h1 class="section-header">Projects</h1>
+<div align="left" class="projects">
+    <ul class="compact-list projects">
+      {project_rows}
+    </ul>
+</div>
+-->

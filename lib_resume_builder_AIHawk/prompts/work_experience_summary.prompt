@@ -1,0 +1,17 @@
+Summarize the work experience highlighting what specifically this role were expected to do, ensuring it aligns well with the provided job description,  applicant's experience, applicant's skills,
+and the type and quality of work and results generally expected from {work_title} .
+Ensure that the created work experience summary builds on top of relevant applicant's experience provided above and aligns well with the job description
+and applicant's title of work experience title of {job_title}.
+Be specific and relevant to this position. Use varying sentences and speech. Sound human, write at the level of PhD candidate. Vary words and sentence structure.
+Emphasize benefits to the business, such as improved customer satisfaction, employee retention, cost reduction, or other benefits to the business.
+Create specific examples based on provided work experience, job requirements, and expectations for the {work_title}
+For example,
+it may say: <begin example>"I built a new machine learning platform while leading and growing the team of data science engineers. As a result at the end of my tenure customer retention improved by 26%"<end example>
+Thoroughly and deeply analyse job description, aplicant's experience, and customary responsibility of the job title of {work_title}.
+Combine and merge it togheter in a very brief, concise, and a high level, executive like summary.
+Do not start with "As a {work_title} at ". Use varied action words. Use synonyms to the word spearheaded if needed.
+Limit response to {n_words} words.
+
+***Begin Applicant's Work Experience***
+{work_experience}
+***End Applicant's Work Experience***

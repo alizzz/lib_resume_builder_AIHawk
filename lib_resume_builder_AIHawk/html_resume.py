@@ -1,8 +1,13 @@
+import traceback
+
 from dotenv import load_dotenv
 import os
 import re
 
+from lib_resume_builder_AIHawk.utils   import is_valid_path, read_chunk
+
 from lib_resume_builder_AIHawk.config import GlobalConfig
+from lib_resume_builder_AIHawk.html_doc import HtmlDoc, format_map
 #from lib_resume_builder_AIHawk.utils import read_chunk
 from lib_resume_builder_AIHawk.resume import Resume, PersonalInformation, WorkExperience, Education
 
@@ -11,76 +16,56 @@ load_dotenv()
 
 #ToDo = temp plug. Replace with configurable value
 DEFAULT_CSS_FILE = r"C:\Users\al\PycharmProjects\lib_resume_builder_AIHawk\lib_resume_builder_AIHawk\resume_style\style_hawk_al_blue.css"
-main_html_template = r'C:\Users\al\PycharmProjects\lib_resume_builder_AIHawk\lib_resume_builder_AIHawk\resume_templates\Resume.html'
+main_html_template = r'C:\Users\al\PycharmProjects\lib_resume_builder_AIHawk\lib_resume_builder_AIHawk\resume_templates\Resume.template.html'
 DEFAULT_CHUNK_PATH = os.path.join('resume_templates', 'chunks')
-def read_chunk(fn, path='', ext='chunk', enc='utf-8', **kwargs)->str:
-    #first check if chunk file exists
-    def chunk_path(fn:str, path='', ext='chunk')->str:
-        fn_ext = f'{fn}.{ext}'
-        if not path: path = os.path.dirname(os.path.relpath(__file__))
-        checks = {"fn":fn,
-                 "fn.ext":fn_ext,
-                 r"path\fn":os.path.join(path, fn),
-                 r"path\fn.ext": os.path.join(path, fn_ext),
-                 r"path\chunks\fn": os.path.join(path, 'chunks', fn),
-                 r"path\chunks\fn.ext": os.path.join(path, 'chunks', fn_ext),
-                  r"path\resume_templates\chunks\fn": os.path.join(path,'resume_templates','chunks', fn),
-                  r"path\resume_templates\chunks\fn.ext": os.path.join(path,'resume_templates','chunks', fn_ext)
 
-                  }
+class HtmlResume(HtmlDoc):
+    def __init__(self, resume=None, css=None, css_path=None, html_template_file=None, html_template_path=None, html_chunk_path = None):
+        super().__init__(resume, css, css_path, html_template_file, html_template_path, html_chunk_path)
+        # self.resume = resume
+        # self.html_template = self.set_html_template(html_template_file, html_template_path) if html_template_file else global_config.html_template
+        # self.css_text = self.set_css(css, css_path) if css else read_chunk(DEFAULT_CSS_FILE)
+        # self.chunk_path = html_chunk_path if html_chunk_path else DEFAULT_CHUNK_PATH
 
-        chunk_name = ''
-        for f in checks.values():
-            if os.path.isfile(f):
-                chunk_name=f
-                break
+    def set_css(self, css, path=None):
+        css_content = read_chunk(fn=css, path=path)
+        self.css = re.sub(r"/\*.*?\*/", "", css_content)
 
-        if not chunk_name:
-            print(f'WARNING: fn_ext is not found', "yellow")
 
-        return chunk_name
+    def set_html_template(self, html_template_file, path=None):
+        self.html_template = os.path.join(path, html_template_file) if path else html_template_file
 
-    chunk_fname = chunk_path(fn, path, ext)
+    # def html_doc(self, css_file, css_inline=True, html_doc_template=None, doc_title:str = 'Job Application Resume', doc_chunk = 'html_doc'):
+    #     return super().html_doc(css_file, css_inline, html_doc_template, doc_title, doc_chunk)
 
-    if not chunk_fname:
-        raise FileNotFoundError()
+    # def html_head(self, css_file=None, css_include=True, css_text=None, doc_title='Resume'):
+    #     css_ = ''
+    #     head_chunk = ''
+    #     try:
+    #         head_chunk = read_chunk('html_head')
+    #         if css_file or css_text:
+    #             # css_text takes precedence. if it is supplied, it is used, file is not being loaded
+    #             # also, if it is supplied, it is going to be included inline, css_inline parameter is ignored
+    #             if css_text:
+    #                 css_ = f'<style type="text/css">{css_text}</style>'
+    #             else:
+    #                 if css_include: #it should be included inline
+    #                     #load content from file
+    #                     css_content = read_chunk(css_file)
+    #                     #clean it
+    #                     css_text = re.sub(r"/\*.*?\*/", "", css_content)
+    #                     css_ = f'<style type="text/css">{css_text}</style>'
+    #                 else:
+    #                     css_=f'<link rel="stylesheet" href="{css_file}" type="text/css">'
+    #
+    #     except Exception as e:
+    #             print(f'Failed to set CSS - html_head error {e} {traceback.format_exc()}')
+    #
+    #     return head_chunk.format(doc_title=doc_title, css=css_)
+    def html_body(self):
+        body_chunk = read_chunk('resume_body')
 
-    try:
-        with open(chunk_fname, "r", encoding=enc) as file:
-            chunk_fmt = file.read()
-            #removing comments
-            chunk_fmt = re.sub(r'<!--.*?-->', '', chunk_fmt, flags=re.DOTALL)
-
-        if chunk_fmt:
-            if kwargs:
-                return chunk_fmt.format(**kwargs)
-            else:
-                return chunk_fmt
-
-    except FileNotFoundError:
-        print(f'FileNotFound exception for {fn} from Resume::html::get_chunk()')
-    except Exception as e:
-        print(f'Exception for {fn} from Resume::html::get_chunk(). Exception:{e}')
-
-    return ""
-
-def format_map(cls):
-    return { attr: getattr(cls, attr) for attr in dir(cls)
-                if not callable(getattr(cls, attr, None)) and not attr.startswith("_")
-    }
-
-class HtmlResume():
-    def __init__(self, resume=None, css=None, chunk_path=None):
-        self.resume = resume
-        self.html_template = global_config.html_template
-        self.css = read_chunk(css) if css else read_chunk(DEFAULT_CSS_FILE)
-        self.chunk_path = chunk_path if chunk_path else DEFAULT_CHUNK_PATH
-
-    
-    def html(self):
-        html_template = read_chunk(main_html_template)
         map = {
-            "inline_css":self.css,
             "name_header": self.header('name_header'),
             "resume_title": self.title(),
             "career_summary":self.career_summary(),
@@ -89,15 +74,43 @@ class HtmlResume():
             "work_experiences":self.work_experiences(),
             "achievements":self.achievements(),
             "skills":self.skills(),
-            "projects":"",
-            "certifications":"",
-            "languages":"",
-            "interests":""
+            "projects":self.projects(),
+            "certifications":self.list_of_strings(self.resume.certifications, title='certifications'),
+            "languages":self.languages(),
+            "interests":self.list_of_strings(self.resume.interests, title='interests')
         }
-        return html_template.format_map(map)
+        return body_chunk.format_map(map)
+
+    def projects(self):
+        prjs_chunk = read_chunk('projects')
+        prj_row_chunk = read_chunk('project_li')
+        if self.resume.languages:
+            rows = [prj_row_chunk.format(name=prj.name,
+                                         description=prj.description if prj.description else "",
+                                         link=prj.link if prj.link else '')
+                    for prj in self.resume.projects if prj]
+            return prjs_chunk.format(project_rows=''.join(rows))
+        else:
+            return "<!-- projects -->"
+
+    def certifications(self):
+        return ''
+    def languages(self):
+        try:
+            if self.resume.languages:
+                lngs_chunk = read_chunk('languages')
+                lng_row_chunk = read_chunk('language_li')
+                rows = [lng_row_chunk.format(key=lng.language, value=lng.proficiency) for lng in self.resume.languages if
+                        lng]
+                return lngs_chunk.format(language_rows=''.join(rows))
+        except Exception as e:
+            print(f'Error: languages failed with error {e}')
+        return "<!-- languages -->"
+    def interests(self):
+        return ''
 
     def title(self):
-        title_chunk = read_chunk('resume_title')
+        title_chunk = read_chunk('application_title')
         return title_chunk.format(resume_title=self.resume.resume_title)
     def header(self, chunk='name_header')->str:
         chunk_html = read_chunk(chunk)
@@ -146,6 +159,7 @@ class HtmlResume():
     def work_experience_map(self, exp: WorkExperience):
         # experience key responsibilities
         exp_key_resp_chunk = read_chunk('exp_key_responsib')
+
         exp_key_resp_row_chunk = read_chunk('exp_key_responsib_row')
         exp_kr_rows = []
 
@@ -189,9 +203,12 @@ class HtmlResume():
         work_exp_chunk = read_chunk('exp_details')
         exp_details_row = ''
         for exp in self.resume.work_experiences:
-            map = self.work_experience_map(exp)
-            work_exp_row_chunk = read_chunk('exp_details_row')
-            exp_details_row+=work_exp_row_chunk.format_map(map)
+            if exp:
+                map = self.work_experience_map(exp)
+                work_exp_row_chunk = read_chunk('exp_details_row')
+                exp_details_row+=work_exp_row_chunk.format_map(map)
+            else:
+                print('Warning: Resume work experience is empty')
 
         return work_exp_chunk.format(exp_details_rows = exp_details_row)
 

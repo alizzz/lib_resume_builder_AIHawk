@@ -1,21 +1,15 @@
 import os
-from pathlib import Path
-import tempfile
-import inquirer
-from lib_resume_builder_AIHawk.config import global_config
-from lib_resume_builder_AIHawk.utils import HTML_to_PDF
-import webbrowser
-import os
-import tempfile
 import webbrowser
 from pathlib import Path
 
 import inquirer
+import yaml
 
 from lib_resume_builder_AIHawk.config import global_config
-from lib_resume_builder_AIHawk.utils import HTML_to_PDF
-from lib_resume_builder_AIHawk.resume import Resume
-from lib_resume_builder_AIHawk.resume_html import HtmlResume
+from lib_resume_builder_AIHawk.utils import HTML2PDF  # this one prints using pdfkit directly from string or from file
+
+
+from src.job import Job
 
 
 class FacadeManager:
@@ -77,7 +71,10 @@ class FacadeManager:
 #        htmlResume = HtmlResume(self.resume_generator.resume_object, css = self.style_manager.get_style_path(self.selected_style) )
 #        pass
 
-    def pdf_base64(self, job_title=None,  job_description_url=None, job_description_text=None, html_file_name=None, delete_html_file=True):
+    def _resume_html(self, job_title: object = None, job_description_url: object = None, job_description_text: object = None,
+                   html_file_name: object = None,
+                   delete_html_file: object = True, job = None) -> str:
+
         if (job_description_url is not None and job_description_text is not None):
             raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
 
@@ -86,23 +83,43 @@ class FacadeManager:
 
         style_path = self.style_manager.get_style_path(self.selected_style)
 
-        temp_html_file = None
-        if html_file_name is None: #create temp file
-            with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.html', encoding='utf-8') as temp_html_file:
-                html_file_name = temp_html_file.name
-
         if job_description_url is None and job_description_text is None:
-            self.resume_generator.create_resume(style_path, html_file_name)
+            html, cover = self.resume_generator.create_resume(style_path)
         elif job_description_url is not None and job_description_text is None:
-            self.resume_generator.create_resume_job_description_url(style_path, job_description_url, html_file_name)
+            html, cover = self.resume_generator.create_resume_job_description_url(style_path, job_description_url, job=job)
         elif job_description_url is None and job_description_text is not None:
-            self.resume_generator.create_resume_job_description_text(style_path, job_description_text, job_title, html_file_name)
+            html, cover = self.resume_generator.create_resume_job_description_text(style_path, job_description_text, job_title, job=job)
         else:
                 return None
-        pdf_base64 = HTML_to_PDF(html_file_name)
-        if delete_html_file:
-            os.remove(html_file_name)
-        if temp_html_file is not None:
-            temp_html_file.close()
+        return html, cover
 
+    def pdf_base64(self, job_title: object = None, job_description_url: object = None, job_description_text: object = None,
+                   resume_html_file_name = None,
+                   delete_html_file = False, job:Job=None) -> object:
+
+        USE_PDFKIT = True #ToDo - add to the configuration
+        resume_html, cover_html = self._resume_html(job_title, job_description_url, job_description_text = job_description_text, job=job)
+
+        with open(resume_html_file_name, 'w', encoding='utf-8') as html_file:
+            html_file.write(resume_html)
+            print(f'Written resume html file: {resume_html_file_name}')
+
+        cover_html_file_name = f'{'.'.join(os.path.splitext(resume_html_file_name)[0].split('.')[:-1])}.Cover.html'
+        with open(cover_html_file_name, 'w', encoding='utf-8') as html_file:
+            html_file.write(cover_html)
+            print(f'Written cover letter html file: {cover_html_file_name}')
+
+        with open(f'{os.path.splitext(resume_html_file_name)[0]}.yaml', 'w', encoding='utf-8') as yaml_file:
+            yaml.dump(self.resume_generator.resume_object.dict(), yaml_file)
+
+        pdf_base64 = None
+        if USE_PDFKIT:
+            print(f'Using HTML2PDF aka pdfkit/wkhtmltopdf based pdf generator')
+            HTML2PDF(resume_html, f'{os.path.splitext(resume_html_file_name)[0]}.pdf')
+            HTML2PDF(cover_html, f'{os.path.splitext(cover_html_file_name)[0]}.pdf')
+        else:
+            print(f'Using HTML_to_PDF aka browser based pdf generator')
+            # pdf_base64 = HTML_to_PDF(html_file_name)
+            # if delete_html_file:
+            #     os.remove(html_file_name)
         return pdf_base64

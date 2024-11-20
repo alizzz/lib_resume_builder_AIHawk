@@ -1,5 +1,5 @@
-import random
 import copy
+import logging
 import os
 import os.path
 import random
@@ -8,12 +8,9 @@ import sys
 import tempfile
 import time
 import traceback
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import List, Dict, Optional, Union
-from lib_resume_builder_AIHawk.resume import Resume, WorkExperience
-from lib_resume_builder_AIHawk.resume_html import HtmlResume
+from typing import List, Dict, Tuple, Any
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
@@ -23,17 +20,21 @@ from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_text_splitters import TokenTextSplitter
-from langchain.output_parsers import CommaSeparatedListOutputParser, ListOutputParser
-from langchain_openai import ChatOpenAI
-from lib_resume_builder_AIHawk.OutputParsers import DelimitedListOutputParser
 
+from lib_resume_builder_AIHawk.html_doc import HtmlDoc
+from lib_resume_builder_AIHawk.OutputParsers import DelimitedListOutputParser
+from lib_resume_builder_AIHawk.asset_manager import PromptManager
 from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase, clean_html_string
-from lib_resume_builder_AIHawk.resume import KeyValue
+from lib_resume_builder_AIHawk.resume import KeyValue, Skill, Achievement
+from lib_resume_builder_AIHawk.resume import WorkExperience
+from lib_resume_builder_AIHawk.html_resume import HtmlResume
+from lib_resume_builder_AIHawk.html_cover import HtmlCover
+from lib_resume_builder_AIHawk.utils import create_driver_selenium
 # from lib_resume_builder_AIHawk.resume_template import resume_template_job_experience, resume_template
 from lib_resume_builder_AIHawk.utils import printcolor, printred, read_format_string, get_content
-from lib_resume_builder_AIHawk.resume import CareerSummary, CareerHighlights, WorkExperience
-from lib_resume_builder_AIHawk.utils import list_of_strings_parser
+from src.job import Job
+
 load_dotenv()
 # ToDo: make it read config file
 
@@ -44,18 +45,27 @@ fullresume_file_backup = os.path.join(os.path.dirname(__file__), 'resume_templat
 
 class LLMResumeJobDescription(LLMResumerBase):
     def __init__(self, openai_api_key, strings):
-        #LLMResumerBase creates the following three
-        #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
-        #self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
-        #self.strings = strings
+        # LLMResumerBase creates the following members
+        # self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=tempertature_cheap))
+        # self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=temperature_good))
+        # self.strings = strings
+        # self.system_msg = None
+        # self.resume: Resume = None
+        # self.msg_chain = []
         super().__init__(openai_api_key=openai_api_key, strings=strings)
+
         self.llm_embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         self.pos_hierarchy_list = None
         self.resume = None
+        self.job = None
         self.job_desc = None
         self.job_title = None
+        self.job_company_name = None
+        self.msg_chain = [] #[('system', PromptManager().load_prompt('hawk_system'))]
+        self.injection_prompt = None
 
-        #setting up logger
+
+        #region setting up logger
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
 
@@ -73,28 +83,65 @@ class LLMResumeJobDescription(LLMResumerBase):
         # Add both handlers to the logger
         self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
+        #endregion
 
-    def get_prompt(self, prompt_key, default_value):
+    def set_job(self, job:Job = None, job_desc:str=None, job_title:str=None):
+        if job:
+            self.job = copy.deepcopy(job)
+            if job_title: self.job_title=job_title
+            if job_desc: self.job_desc=job_desc
+        else:
+            if job_title: job_title=job_title
+            if job_desc: job_desc=job_desc
+
+    def add_system_prompt(self, key='hawk_system', map:Dict[str,Any]={}):
+        if not key: return
+        print(f'Adding system prompt {key}')
         try:
-            prompt_file = global_config.prompt_dict.get(prompt_key)
-            if prompt_file is None:
-                 raise FileNotFoundError()
-
-            with open(prompt_file, mode='r', encoding='utf-8') as f:
-                prompt_content = f.read()
-                if prompt_content is not None:
-                    #print(f'Retrieved prompt from file {prompt_key}')
-                    return prompt_content
+            job_desc = self.job.get_llm_prompt_info()
+            map["job_description"]=job_desc
+            sys_prompt = PromptManager().load_prompt(key, map=map)
+            if sys_prompt:
+                self.msg_chain.append(('system', sys_prompt))
+                self.system_msg = sys_prompt
         except Exception as e:
-            self.logger.info('an exception')
+            printred(f'Failed to add system prompt {key}. Error: {e}')
+    def get_prompt(self, prompt_key, default_value, map={}):
 
-        print(f'Unable to retrieve prompt from file {prompt_key}. Returning value from strings.py')
-        return default_value
+        p_ = PromptManager().load_prompt(key=prompt_key, map=map)
+        if p_ is None or p_.startswith('Warning: unable'):
+            return default_value
+        else:
+            return p_
+
+        #try:
+        #     prompt_file = global_config.prompt_dict.get(prompt_key)
+        #     if prompt_file is None:
+        #          raise FileNotFoundError()
+        #
+        #     with open(prompt_file, mode='r', encoding='utf-8') as f:
+        #         prompt_content = f.read()
+        #         if prompt_content is not None:
+        #             #print(f'Retrieved prompt from file {prompt_key}')
+        #             return prompt_content
+        # except Exception as e:
+        #     self.logger.info('an exception')
+        #
+        # print(f'Unable to retrieve prompt from file {prompt_key}. Returning value from strings.py')
+        # return default_value
 
     #@staticmethod
     #def _preprocess_template_string(template: str) -> str:
     #    # Preprocess a template string to remove unnecessary indentation.
     #   return textwrap.dedent(template)
+
+    def set_default_injection_prompt(self, inj_p=None, map={}):
+        # if inj_p is None:
+        #     self.injection_prompt =  self._default_injection_prompt()
+        # if inj_p == 'None':
+        #     self.injection_prompt = ''
+        # self.injection_prompt = inj_p.format_map(map)
+        self.injection_prompt = ''
 
     def set_resume(self, resume):
         self.resume = copy.deepcopy(resume)
@@ -107,7 +154,6 @@ class LLMResumeJobDescription(LLMResumerBase):
         printcolor(
             f'in LLMResumeJobDescription.set_job_description_from_url', "blue")
 
-        from lib_resume_builder_AIHawk.utils import create_driver_selenium
         driver = create_driver_selenium()
         driver.get(url_job_description)
         time.sleep(3)
@@ -138,7 +184,7 @@ class LLMResumeJobDescription(LLMResumerBase):
         chain_job_description= prompt | self.llm_cheap | StrOutputParser()
         #reads from prompts\job_description_summary.prompts if available. Otherwise uses self.strings.summarize_prompt_template
         summarize_prompt_template = self._preprocess_template_string(
-            self.get_prompt('job_description_summary' ,self.strings.summarize_prompt_template))
+            PromptManager().load_prompt('job_description_summary'))
         prompt_summarize = ChatPromptTemplate.from_template(summarize_prompt_template)
         chain_summarize = prompt_summarize | self.llm_cheap | StrOutputParser()
         qa_chain = (
@@ -159,16 +205,18 @@ class LLMResumeJobDescription(LLMResumerBase):
 
 
     def set_job_description_from_text(self, job_description_text: object) -> object:
-        prompt = ChatPromptTemplate.from_template(self.strings.summarize_prompt_template)
-        chain = prompt | self.llm_cheap | StrOutputParser()
-        output = chain.invoke({"text": job_description_text})
-        self.job_description = output
-        print("In set_job_description_from_text() executed summarize_prompt_template")
+        self.job_desc = job_description_text
+        # summarize_prompt_template = PromptManager().load_prompt('job_description_summary')
+        # prompt = ChatPromptTemplate.from_template(summarize_prompt_template)
+        # chain = prompt | self.llm_cheap | StrOutputParser()
+        # output = chain.invoke({"text": job_description_text})
+        # self.job_description = output
+        # print("In set_job_description_from_text() executed job_description_summary prompt")
+        return job_description_text
 
     def _generate_header_gpt(self) -> str:
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        header_prompt_template = self._preprocess_template_string(
-            self.get_prompt('header', self.strings.summarize_prompt_template))
+        header_prompt_template = self._preprocess_template_string(PromptManager().load_prompt('header'))
         prompt = ChatPromptTemplate.from_template(header_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
@@ -187,9 +235,7 @@ class LLMResumeJobDescription(LLMResumerBase):
     def generate_education_section(self) -> str:
         print("In generate_education_section")
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        education_prompt_template = self._preprocess_template_string(
-            self.get_prompt('education_history',
-                            self.strings.prompt_education))
+        education_prompt_template = self._preprocess_template_string(PromptManager().load_prompt('education_history'))
 
         prompt = ChatPromptTemplate.from_template(education_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
@@ -199,198 +245,152 @@ class LLMResumeJobDescription(LLMResumerBase):
         })
         return output
 
-    def generate_work_experience_ai(self, work_experience:WorkExperience):
+    def generate_work_experience_ai(self, work_experience:WorkExperience, k:int=-1):
         print(f'In: generate_work_experience_ai() for {work_experience.position} at {work_experience.company}')
+        we:WorkExperience = copy.deepcopy(work_experience)
+        msg_history=[]
+        we.summary = self.generate_work_experience_summary_ai(k, we, msg_history)
+        msg_history.extend([('ai',we.summary)])
+
+        return self.generate_work_experience_key_achievements_ai(k, we)
+
+
+    def generate_achievements_section_ai(self) -> str:
+        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
+        map = self.build_default_map()
+
+        parser = DelimitedListOutputParser('\n')
+        prompt = self._load_and_prepare_prompt(prompt_key='achievements', map_data=map,
+                                               parser=parser, msg_chain=self.msg_chain)
+
+        a_list = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain)
+
+        self.resume.achievements = [Achievement(name=a.split(':')[0], description=a.split(":")[1]) for a in a_list if a and len(a.split(":"))>1]
+
+        # achievements_prompt_template = self._preprocess_template_string(
+        #     PromptManager().load_prompt('achievements_html'))
+        #
+        # if self.resume.achievements:
+        #     prompt = ChatPromptTemplate.from_template(achievements_prompt_template)
+        #     chain = prompt | self.llm_cheap | StrOutputParser()
+        #     output = chain.invoke({
+        #         "achievements": self.resume.achievements,
+        #         "certifications": self.resume.achievements,
+        #         "job_description": self.job_description
+        #     })
+        return '\n'.join(a_list)
+
+    def build_default_map(self, n_lines=0, n_words=0):
+        return {
+            "job_title": self.job_title,
+            "job_description": self.job.job_description_summary if self.job.job_description_summary else self.job.description,
+            "work_history": '\n'.join([we.text() for we in self.resume.work_experiences]),
+            "career_summary": ','.join(self.resume.career_summary),
+            "career_highlights": ','.join([x.text() for x in self.resume.career_highlights if x]),
+            "skills": ','.join([x.text() for x in self.resume.skills if x]),
+            "achievements": ','.join([x.text() for x in self.resume.achievements if x]),
+            "n_words":n_words,
+            "n_lines":n_lines,
+            "years_technical_experience": self.resume.personal_information.years_technical_experience,
+            "years_leadership_experience": self.resume.personal_information.years_mgmt_experience
+        }
+    def _default_injection_prompt(self, map={}, default_injection_prompt='_default_injection_prompt'):
+        if not map:
+            map={
+            "job_title": self.job_title,
+            "job_description": self.job_desc,
+            "work_history":'\n'.join([we.text() for we in self.resume.work_experiences]),
+            "career_summary": ','.join(self.resume.career_summary),
+            "career_highlights": ','.join([x.text() for x in self.resume.career_highlights if x]),
+            "skills": ','.join([x.text() for x in self.resume.skills if x]),
+            "achievements": ','.join([x.text() for x in self.resume.achievements if x])
+            }
+
+            return PromptManager().load_prompt(default_injection_prompt, map)
+
+    def _load_and_prepare_prompt(self,  prompt_key: str, map_data: dict= {}, parser=None, msg_chain: List[Tuple[str, str]]=[], do_not_use_long_message_chain:bool = True) -> ChatPromptTemplate:
         try:
-            parser = PydanticOutputParser(pydantic_object = WorkExperience)
-            output_parser = CommaSeparatedListOutputParser()
-            p_ = self.get_prompt(prompt_key='work_experience_pydantic',
-                                 default_value=self.strings.prompt_work_experience_pydantic)
-            parameter_list = list(set(re.findall(r'\{(.*?)\}', p_)))
-            prompt = self._preprocess_template_string(
-                p_, add_format_instructions_template=True)
+            if not parser:
+                parser = StrOutputParser()
 
-            prompt_template = PromptTemplate(
-                template=prompt,
-                input_variables=parameter_list,
-                partial_variables={"format_instructions": parser.get_format_instructions()},
+            if isinstance(parser, StrOutputParser):
+                format_instructions = "Provide a plain text response without any extra formatting"
+            else:
+                try:
+                    format_instructions = parser.get_format_instructions()
+                except:
+                    format_instructions = ''
+
+            prompt_template = PromptManager().load_prompt(prompt_key, map=map_data)
+            formatted_prompt = self._preprocess_template_string(
+                prompt_template, format_instructions=format_instructions
             )
-            chain = prompt_template | self.llm_cheap
-            output = chain.invoke({
-                "job_description":self.job_description,
-                "work_experience":work_experience.text(),
-                "work_title":work_experience.position
-            })
 
-            work_experience = parser.invoke(output)
-            print(f'Updated work experience: {work_experience.text()}')
+            #Note: To maintain continuity of responses we need to send msg_chain
+            #But it is expensive - a lot of tokens in the chain
+            #Also every requiest is pretty much self-sufficient, and does not depend on previous answers
+            #therefore here we reduce number of messages in the chain, and pretend that this is the first message
+            msg_chain.append(("human", formatted_prompt))
+            if do_not_use_long_message_chain:
+                msg = [('system', self.system_msg)]
+                msg.append(("human", formatted_prompt))
+            else:
+                msg = [m for m in msg_chain]
+
+            return ChatPromptTemplate(msg)
         except Exception as e:
-            self.logger.error(f'Exception while processing work experience for {work_experience.position} at {work_experience.company}')
-            printcolor(f'Exception while processing work experience for {work_experience.position} at {work_experience.company}', 'blue')
-        return work_experience.text()
-
-
-    def generate_career_highlights_ai(self)->str:
-        try:
-            print('In: generate_career_highlights_ai()' )
-            parser = DelimitedListOutputParser('\n--') # PydanticOutputParser(pydantic_object=CareerHighlights)
-
-
-            # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-            p_= self.get_prompt(prompt_key='career_highlights',
-                                default_value=self.strings.career_highlights_prompt)
-
-            prompt_template = self._preprocess_template_string(
-                p_, add_format_instructions_template=True)
-
-            prompt = PromptTemplate(
-                template=prompt_template,
-                input_variables=["career_summary", "career_highlights", "experiences", "achievements", "skills",
-                                 "years_of_technical_experience","years_of_leaderhsip_experience"],
-                partial_variables={"format_instructions": parser.get_format_instructions()},
-            )
-            career_summary =  '\n\nCareer Summary:\n'+'\n'.join(self.resume.career_summary)
-            career_highlights = '\n\nCareer Highlights:\n'+'\n'.join([h.text() for h in self.resume.career_highlights if h])
-            experiences = '' #'\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume_in.work_experiences.work_experiences if x])
-            achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
-            skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
-
-            chain = prompt | self.llm_cheap
-            output = chain.invoke({
-                "career_summary": career_summary,
-                "career_highlights": career_highlights,
-                "experiences": experiences,
-                "achievements": achievements,
-                "skills": skills,
-                "years_leadership_experience" : self.resume.personal_information.years_mgmt_experience,
-                "years_technical_experience" : self.resume.personal_information.years_technical_experience,
-                "job_description": self.job_description
-            })
-
-            ch = parser.invoke(output)
-            chh = []
-            for c in ch:
-                if c:
-                    if isinstance(c, CareerHighlights):
-                        chh.append(ch)
-                    if isinstance(c, str):
-                        cc = c.split(":")
-                        k = cc[0]
-                        v = cc[1] if len(cc)>0 else ""
-                        chh.append(KeyValue(key=k, value=v))
-
-            self.resume.career_highlights = chh
-            txt_out = '\n'.join(ch)
-            return txt_out
-        except Exception as e:
-            self.logger.error('Error in generate_career_highlights_ai')
-            print(f'Exception in generate_career_highlights_ai. Error {e}')
+            printred(f"Error loading or preparing prompt {prompt_key}: {e}")
+            self.logger.error(f"Error loading or preparing prompt {prompt_key}: {e}")
             raise e
 
-    def _generate_career_highlights_ai(self)->str:
-        print('In: generate_career_highlights_ai()')
+    def _invoke_chain(self, prompt_template, parser, msg_chain: List[Tuple[str, str]]=[], key:str=None):
+        try:
+            chain = prompt_template | self.llm_good
+            output = chain.invoke({})
 
-        template_string = self.get_prompt('career_highlights',
-                            self.strings.prompt_career_summary)
+            msg_chain.append(('ai', output.content))
+            return parser.invoke(output)
+        except Exception as e:
+            self.logger.error(f"Error invoking chain: {e}")
+            raise e
 
-        career_summary =  '\n\nCareer Summary:\n'+self.resume.career_summary.text()
-        career_highlights = '\n\nCareer Highlights:\n'+self.resume.career_highlights.text()
-        experiences = '\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume.work_experiences.work_experiences if x])
-        achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
-        skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
-
-
-        ch = self.llm_pydantic_invoke(self, pydantic_object=CareerHighlights, prompt_string_template=template_string, llm=self.llm_cheap,
-                                      career_summary=career_summary,
-                                      career_highlights = career_highlights,
-                                      experiences = experiences,
-                                      achievements=achievements,
-                                      skills=skills,
-                                      years_technical_experience = self.resume.personal_information.years_technical_experience,
-                                      years_leadership_experience = self.resume.personal_information.years_mgmt_experience,
-                                      job_description = self.job_description
-                                      )
-
-        self.resume.career_highlights = ch
-
-        return self.resume.career_highlights.text()
-
-    def generate_career_summary_ai(self)->str:
-        print('In: generate_career_summary_ai()' )
-        parser = PydanticOutputParser(pydantic_object=CareerSummary)
-
-        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        career_summary_prompt_template = self._preprocess_template_string(
-            self.get_prompt('career_summary0',
-                            self.strings.prompt_career_summary))
-
-        prompt = PromptTemplate(
-            template=career_summary_prompt_template+'\n{format_instructions}',
-            input_variables=["career_summary","career_highlights",
-                             "years_of_technical_experience","years_of_leaderhsip_experience",
-                             "experiences","achievements",
-                             "skills","job_description"],
-            partial_variables={"format_instructions": parser.get_format_instructions()},
-        )
-        career_summary =  '\n\nCareer Summary:\n'+'\n'.join(self.resume.career_summary)
-        career_highlights = '\n\nCareer Highlights:\n'+'\n'.join([h.key+':'+h.value for h in self.resume.career_highlights if h])
-        experiences = '\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.summary+'\n'.join(x.skills_acquired) for x in self.resume.work_experiences if x])
-        achievements = '\n\nAchievements:\n'+'\n'.join([x.name + ':' + x.description for x in self.resume.achievements if x])
-        skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
-
-        chain = prompt | self.llm_cheap
-        output = chain.invoke({
-            "career_summary": career_summary,
-            "career_highlights": career_highlights,
-            "years_of_technical_experience": self.resume.personal_information.years_technical_experience,
-            "years_of_leaderhsip_experience": self.resume.personal_information.years_mgmt_experience,
-            "experiences": experiences,
-            "achievements": achievements,
-            "skills": skills,
-            "job_description": self.job_description
-        })
-
-        cs = parser.invoke(output)
-        self.resume.career_summary = cs.career_summary
-        return '\n'.join(self.resume.career_summary)
-
-    def generate_work_experience_section_summary_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
-        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        work_experience_summary_prompt_template = self._preprocess_template_string(
-            self.get_prompt('professional_experience_role_summary', self.strings.prompt_professional_experience_role_summary))
-
-        prompt = ChatPromptTemplate.from_template(work_experience_summary_prompt_template)
-        chain = prompt | self.llm_good | StrOutputParser()
-        raw_output = chain.invoke({
-            "job_desc": job_desc,
-            "work_experience": work_experience,
-            "position_title": position_title,
-            "skills": skills
-        })
-        output = clean_html_string(raw_output)
-        return output
-
-    def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="", n_lines = random.choice([3,4,5])) -> str:
-        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        work_experience_prompt_template = self._preprocess_template_string(
-            self.get_prompt('work_experience', self.strings.prompt_work_experience))
-
-        prompt = ChatPromptTemplate.from_template(work_experience_prompt_template)
-        chain = prompt | self.llm_good | StrOutputParser()
-        raw_output = chain.invoke({
-            "experience_details": work_experience,
-            "job_description": job_desc,
-            "skills": skills,
-            "position": position_title,
-            "n_line_items":n_lines
-        })
-        output = clean_html_string(raw_output)
-        return output
+    # def generate_work_experience_section_summary_ai(self, work_experience="", skills="", position_title="", job_desc="") -> str:
+    #     # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
+    #     work_experience_summary_prompt_template = self._preprocess_template_string(
+    #         PromptManager().load_prompt('professional_experience_role_summary'))
+    #
+    #     prompt = ChatPromptTemplate.from_template(work_experience_summary_prompt_template)
+    #     chain = prompt | self.llm_good | StrOutputParser()
+    #     raw_output = chain.invoke({
+    #         "job_desc": job_desc,
+    #         "work_experience": work_experience,
+    #         "position_title": position_title,
+    #         "skills": skills
+    #     })
+    #     output = clean_html_string(raw_output)
+    #     return output
+    #
+    # def generate_work_experience_section_ai(self, work_experience="", skills="", position_title="", job_desc="", n_lines = random.choice([3,4,5])) -> str:
+    #     # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
+    #     work_experience_prompt_template = self._preprocess_template_string(
+    #         PromptManager().load_prompt('work_experience'))
+    #
+    #     prompt = ChatPromptTemplate.from_template(work_experience_prompt_template)
+    #     chain = prompt | self.llm_good | StrOutputParser()
+    #     raw_output = chain.invoke({
+    #         "experience_details": work_experience,
+    #         "job_description": job_desc,
+    #         "skills": skills,
+    #         "position": position_title,
+    #         "n_line_items":n_lines
+    #     })
+    #     output = clean_html_string(raw_output)
+    #     return output
 
     def generate_side_projects_section(self) -> str:
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         side_projects_prompt_template = self._preprocess_template_string(
-            self.get_prompt('side_projects', self.strings.prompt_side_projects))
+            PromptManager().load_prompt('side_projects'))
 
         prompt = ChatPromptTemplate.from_template(side_projects_prompt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
@@ -400,30 +400,15 @@ class LLMResumeJobDescription(LLMResumerBase):
         })
         return output
 
-    def generate_achievements_section(self) -> str:
-        # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
-        achievements_prompt_template = self._preprocess_template_string(
-            self.get_prompt('achievements_html', self.strings.prompt_achievements))
-
-
-        if self.resume.achievements:
-            prompt = ChatPromptTemplate.from_template(achievements_prompt_template)
-            chain = prompt | self.llm_cheap | StrOutputParser()
-            output = chain.invoke({
-                "achievements": self.resume.achievements,
-                "certifications": self.resume.achievements,
-                "job_description": self.job_description
-            })
-            return output
-
     def generate_additional_skills_section(self) -> str:
+
 
         def split_string(s, sep=','):
             return [x.strip() for x in s.split(sep)]
 
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         additional_skills_prompt_template = self._preprocess_template_string(
-            self.get_prompt('additional_skills', self.strings.prompt_additional_skills))
+            PromptManager().load_prompt('additional_skills'))
 
         skills = set()
 
@@ -519,7 +504,7 @@ class LLMResumeJobDescription(LLMResumerBase):
     def generate_application_title_ai(self):
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         application_title_template = self._preprocess_template_string(
-            self.get_prompt('application_title', self.strings.prompt_application_title))
+            PromptManager().load_prompt('application_title'))
 
         prompt = ChatPromptTemplate.from_template(application_title_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
@@ -537,7 +522,7 @@ class LLMResumeJobDescription(LLMResumerBase):
     def _generate_position_hierarchy_ai(self):
         # reads from prompts\[name.prompt] if available. Otherwise uses self.strings.[value]
         gpt_template = self._preprocess_template_string(
-            self.get_prompt('position_hierarchy', self.strings.prompt_position_hierarchy))
+            PromptManager().load_prompt('position_hierarchy'))
         prompt = ChatPromptTemplate.from_template(gpt_template)
         chain = prompt | self.llm_cheap | StrOutputParser()
         hierarchy_string = chain.invoke({
@@ -568,149 +553,149 @@ class LLMResumeJobDescription(LLMResumerBase):
                 new_pos = _position_automl(position, self.pos_hierarchy_list)
                 self.resume.work_experiences[k].position = new_pos
 
-    # ToDo: read from config
-    def generate_career_timeline(self):
-        exp_timeline_long_table_default = """
-                <table width="760" cellpadding="0" cellspacing="0">
-                    <col width="110"/>
-                    <col width="140"/>
-                    <col width="240"/>
-                    <col width="120"/>
-                   <col width="150"/>
-                   {exp_timeline_html}
-                </table>
-                """
-        exp_timeline_long_row_default = """<tr>
-            <td class='exp_details_company'>{exp.company}</td>
-            <td class='exp_details_industry'>{exp.industry}</td>
-           <td class='exp_details_position'>{exp.position}</td>
-           <td class='exp_details_location'>{exp.location}</td>
-            <td class='exp_details_period'>{exp.employment_period}</td>
-         </tr>"""
-
-        exp_timeline_html = ""
-        for exp in self.resume.work_experiences:
-            html_chunk = global_config.get_html_chunk('exp_timeline_long_row', exp_timeline_long_row_default)
-            exp_m = global_config.unpack_members(exp)
-            exp_timeline_html += html_chunk.format(**exp_m)
-
-        output_html_raw = global_config.get_html_chunk('exp_timeline_long_table', default=exp_timeline_long_table_default)
-        output_html_raw = output_html_raw.format(exp_timeline_html=exp_timeline_html)
-        output = clean_html_string(output_html_raw)
-        return output
-
-    def generate_education_summary(self):
-        edu_timeline_html_default = """<h2 class="education-header">Education and Training</h2>
-                                        <ul class="education-summary">{edu_li}</ul>"""
-
-        edu_timeline_li_default = '<li><span class="degree">{degree}</span> | <span class="ed_industry">{field_of_study}</span> | <span class="ed_univ"> {university}</span></li>'
-        edu_timeline_html = '<!--'+edu_timeline_html_default+'-->'
-
-        #print("in generate_education_summary")
-        try:
-            edu_timeline_html_fmt = global_config.get_html_chunk('education', default=edu_timeline_html_default)
-            edu_li_fmt = global_config.get_html_chunk('edu_summary_li', default=edu_timeline_li_default)
-
-            edu_list = []
-            for edu in self.resume.education_details:
-                edu_map = global_config.unpack_members(edu)
-                _edu_li = edu_li_fmt.format(**edu_map)
-                edu_list.append(_edu_li)
-
-            edu_li=''.join(edu_list)
-            edu_timeline_html = edu_timeline_html_fmt.format(edu_li = edu_li)
-        except Exception as e:
-            self.logger.error('Exception in generate_education_summary')
-            print(f'Exception in generate_education_summary. Error: {e}')
-
-        return clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
-
-    def generate_language_skills_section(self):
-        #print("in generate_language_skills_section")
-
-        edu_timeline_html = '<ul class="skills">'
-        if self.resume.languages is None or len(self.resume.languages)==0:
-            return clean_html_string(f'{edu_timeline_html}<li><b>"English</b>:Native</li></ul>')
-
-        for l in self.resume.languages:
-            edu_timeline_html+=f"<li><b>{l.language}</b>:{l.proficiency}</li>"
-
-        edu_timeline_html+="</ul>"
-        output = clean_html_string(edu_timeline_html)
-        return output
-
-    def generate_academic_appointments(self):
-        output=""
-        return output
-
-    def generate_professional_experience_ai(self):
-
-        raw_html = """<div class="professional-experience-a">"""
-        for exp in self.resume.experience_details:
-            exp_html = ""
-            skills=""
-            key_resp = ""
-            try:
-                if exp.summary is not None:
-                    key_resp+=exp.summary + '/n'
-
-                if exp.key_responsibilities is not None:
-                    key_resp = ('\n').join(exp.key_responsibilities)
-            except Exception as e:
-                self.logger.error(f"Exception while processing key responsibiity for {exp.company}:{exp.position}")
-                printcolor(f"Exception while processing key responsibiity for {exp.company}:{exp.position}. Exception: {e}")
-            try:
-                try:
-                    skills += '\n'.join(exp.skills_acquired)
-                except Exception as e:
-                    self.logger.error('Processing skills acquired')
-                try:
-                    skills+=','.join([s.skill_lst for s in self.resume.skills])
-                except Exception as e:
-                    self.logger.error('Processing some skills')
-                #if self.resume_.skills is not None:
-                #    for s in self.resume_.skills:
-                #        skills+=s.skill_lst
-            except Exception as e:
-                self.logger.error(f"Exception while processing skills for {exp.company}:{exp.position}")
-                printcolor(f"Exception while processing skills for {exp.company}:{exp.position}. Exception: {e}")
-
-            # --- Position Header
-            exp_html += f"""<div class="professional_experience_item">
-                        <table><tr>
-                                <td class="exp_details_company">{exp.company}</td>
-                                <td class="exp_details_position">{exp.position}</td>
-                                <td class="exp_details_location">{exp.location}</td>
-                                <td class="exp_details_history">{exp.employment_period}</td>
-                        </tr></table>"""
-            # --- Position summary ---#
-            try:
-                try:
-                    exp_summary_ai = self.generate_work_experience_section_summary_ai(
-                        work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description
-                    )
-                    if exp_summary_ai is not None and len(exp_summary_ai)>0:
-                        exp_html+= f"""<div align="justify" class="prof-exp-summary">{exp_summary_ai}</div>"""
-                except Exception as e:
-                    self.logger.error(f'Experience section summary thrown an exception for {exp.position} for {exp.company}')
-                    exp_html += f"""<div align="justify" class="prof-exp-summary">{exp.summary}</div>"""
-                    printcolor(f'Experience section summary thrown an exception for {exp.position} for {exp.company}. Exception {e}', "yellow")
-
-                # --- Position responsibilities ---#
-                responsibility_html = self.generate_work_experience_section_ai(
-                        work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description)
-
-                if len(responsibility_html) > 0:
-                    exp_html += f"""<ul class="professional_exp_responsibility">{responsibility_html}</ul>"""
-            except Exception as e:
-                self.logger.error(f"Exception while processing work experience section for {exp.company}:{exp.position}")
-                printcolor(f"Exception while processing work experience section for {exp.company}:{exp.position}. Exception:{e}")
-
-            raw_html += f"{exp_html}</div>"
-        raw_html += "</div>"
-        output = clean_html_string(raw_html)
-        printcolor(f'work experience:{output}', "magenta")
-        return output
+    # # ToDo: read from config
+    # def generate_career_timeline(self):
+    #     exp_timeline_long_table_default = """
+    #             <table width="760" cellpadding="0" cellspacing="0">
+    #                 <col width="110"/>
+    #                 <col width="140"/>
+    #                 <col width="240"/>
+    #                 <col width="120"/>
+    #                <col width="150"/>
+    #                {exp_timeline_html}
+    #             </table>
+    #             """
+    #     exp_timeline_long_row_default = """<tr>
+    #         <td class='exp_details_company'>{exp.company}</td>
+    #         <td class='exp_details_industry'>{exp.industry}</td>
+    #        <td class='exp_details_position'>{exp.position}</td>
+    #        <td class='exp_details_location'>{exp.location}</td>
+    #         <td class='exp_details_period'>{exp.employment_period}</td>
+    #      </tr>"""
+    #
+    #     exp_timeline_html = ""
+    #     for exp in self.resume.work_experiences:
+    #         html_chunk = global_config.get_html_chunk('exp_timeline_long_row', exp_timeline_long_row_default)
+    #         exp_m = global_config.unpack_members(exp)
+    #         exp_timeline_html += html_chunk.format(**exp_m)
+    #
+    #     output_html_raw = global_config.get_html_chunk('exp_timeline_long_table', default=exp_timeline_long_table_default)
+    #     output_html_raw = output_html_raw.format(exp_timeline_html=exp_timeline_html)
+    #     output = clean_html_string(output_html_raw)
+    #     return output
+    #
+    # def generate_education_summary(self):
+    #     edu_timeline_html_default = """<h2 class="education-header">Education and Training</h2>
+    #                                     <ul class="education-summary">{edu_li}</ul>"""
+    #
+    #     edu_timeline_li_default = '<li><span class="degree">{degree}</span> | <span class="ed_industry">{field_of_study}</span> | <span class="ed_univ"> {university}</span></li>'
+    #     edu_timeline_html = '<!--'+edu_timeline_html_default+'-->'
+    #
+    #     #print("in generate_education_summary")
+    #     try:
+    #         edu_timeline_html_fmt = global_config.get_html_chunk('education', default=edu_timeline_html_default)
+    #         edu_li_fmt = global_config.get_html_chunk('edu_summary_li', default=edu_timeline_li_default)
+    #
+    #         edu_list = []
+    #         for edu in self.resume.education_details:
+    #             edu_map = global_config.unpack_members(edu)
+    #             _edu_li = edu_li_fmt.format(**edu_map)
+    #             edu_list.append(_edu_li)
+    #
+    #         edu_li=''.join(edu_list)
+    #         edu_timeline_html = edu_timeline_html_fmt.format(edu_li = edu_li)
+    #     except Exception as e:
+    #         self.logger.error('Exception in generate_education_summary')
+    #         print(f'Exception in generate_education_summary. Error: {e}')
+    #
+    #     return clean_html_string(edu_timeline_html if not None else edu_timeline_html_default)
+    #
+    # def generate_language_skills_section(self):
+    #     #print("in generate_language_skills_section")
+    #
+    #     edu_timeline_html = '<ul class="skills">'
+    #     if self.resume.languages is None or len(self.resume.languages)==0:
+    #         return clean_html_string(f'{edu_timeline_html}<li><b>"English</b>:Native</li></ul>')
+    #
+    #     for l in self.resume.languages:
+    #         edu_timeline_html+=f"<li><b>{l.language}</b>:{l.proficiency}</li>"
+    #
+    #     edu_timeline_html+="</ul>"
+    #     output = clean_html_string(edu_timeline_html)
+    #     return output
+    #
+    # def generate_academic_appointments(self):
+    #     output=""
+    #     return output
+    #
+    # def generate_professional_experience_ai(self):
+    #
+    #     raw_html = """<div class="professional-experience-a">"""
+    #     for exp in self.resume.experience_details:
+    #         exp_html = ""
+    #         skills=""
+    #         key_resp = ""
+    #         try:
+    #             if exp.summary is not None:
+    #                 key_resp+=exp.summary + '/n'
+    #
+    #             if exp.key_responsibilities is not None:
+    #                 key_resp = ('\n').join(exp.key_responsibilities)
+    #         except Exception as e:
+    #             self.logger.error(f"Exception while processing key responsibiity for {exp.company}:{exp.position}")
+    #             printcolor(f"Exception while processing key responsibiity for {exp.company}:{exp.position}. Exception: {e}")
+    #         try:
+    #             try:
+    #                 skills += '\n'.join(exp.skills_acquired)
+    #             except Exception as e:
+    #                 self.logger.error('Processing skills acquired')
+    #             try:
+    #                 skills+=','.join([s.skill_lst for s in self.resume.skills])
+    #             except Exception as e:
+    #                 self.logger.error('Processing some skills')
+    #             #if self.resume_.skills is not None:
+    #             #    for s in self.resume_.skills:
+    #             #        skills+=s.skill_lst
+    #         except Exception as e:
+    #             self.logger.error(f"Exception while processing skills for {exp.company}:{exp.position}")
+    #             printcolor(f"Exception while processing skills for {exp.company}:{exp.position}. Exception: {e}")
+    #
+    #         # --- Position Header
+    #         exp_html += f"""<div class="professional_experience_item">
+    #                     <table><tr>
+    #                             <td class="exp_details_company">{exp.company}</td>
+    #                             <td class="exp_details_position">{exp.position}</td>
+    #                             <td class="exp_details_location">{exp.location}</td>
+    #                             <td class="exp_details_history">{exp.employment_period}</td>
+    #                     </tr></table>"""
+    #         # --- Position summary ---#
+    #         try:
+    #             try:
+    #                 exp_summary_ai = self.generate_work_experience_section_summary_ai(
+    #                     work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description
+    #                 )
+    #                 if exp_summary_ai is not None and len(exp_summary_ai)>0:
+    #                     exp_html+= f"""<div align="justify" class="prof-exp-summary">{exp_summary_ai}</div>"""
+    #             except Exception as e:
+    #                 self.logger.error(f'Experience section summary thrown an exception for {exp.position} for {exp.company}')
+    #                 exp_html += f"""<div align="justify" class="prof-exp-summary">{exp.summary}</div>"""
+    #                 printcolor(f'Experience section summary thrown an exception for {exp.position} for {exp.company}. Exception {e}', "yellow")
+    #
+    #             # --- Position responsibilities ---#
+    #             responsibility_html = self.generate_work_experience_section_ai(
+    #                     work_experience=key_resp, skills=skills, position_title=exp.position, job_desc=self.job_description)
+    #
+    #             if len(responsibility_html) > 0:
+    #                 exp_html += f"""<ul class="professional_exp_responsibility">{responsibility_html}</ul>"""
+    #         except Exception as e:
+    #             self.logger.error(f"Exception while processing work experience section for {exp.company}:{exp.position}")
+    #             printcolor(f"Exception while processing work experience section for {exp.company}:{exp.position}. Exception:{e}")
+    #
+    #         raw_html += f"{exp_html}</div>"
+    #     raw_html += "</div>"
+    #     output = clean_html_string(raw_html)
+    #     printcolor(f'work experience:{output}', "magenta")
+    #     return output
 
     #ToDo: 1. read experience from config
     #ToDo: 2. use genAI. Generate updated experience based on job description
@@ -759,20 +744,339 @@ class LLMResumeJobDescription(LLMResumerBase):
         output=""
         return output
 
-    def generate_html_resume(self) -> str:
+    def generate_cover_letter_content_ai(self):
+        try:
+            map_data = self.build_default_map()
+            parser = DelimitedListOutputParser('\n')#StrOutputParser()
+
+            map_data=self.build_default_map()
+            map_data['name_prefix']=self.resume.personal_information.name_prefix
+            map_data['name'] = self.resume.personal_information.name
+            map_data['surname'] = self.resume.personal_information.surname
+            map_data['name_suffix'] = self.resume.personal_information.name_suffix
+            map_data["company_name"] = self.job.company
+
+            prompt_template = self._load_and_prepare_prompt(
+                'cover_letter_body', map_data, parser, self.msg_chain)
+
+            cover_content = self._invoke_chain(prompt_template, parser)
+
+            return cover_content
+
+        except Exception as e:
+            printred(f'Exception in generate_cover_letter_content_ai(). Error: {e} {traceback.format_exc()}')
+        return ''
+    def generate_tailored_skills_section_ai(self):
+        try:
+            format_instructions = """
+            Deliverable:
+            A structured and tailored list of skills, categorized as follows:
+
+            Technical: Comma-delimited list of skills.
+            Leadership and People Management: Comma-delimited list of skills.
+            Business Domain Knowledge: Comma-delimited list of skills.
+            Soft Skills: Comma-delimited list of skills.
+            AI/ML Skills: Comma-delimited list of skills.
+            Ethics and Governance: Comma-delimited list of skills."""
+            map_data = self.build_default_map()
+
+            parser = DelimitedListOutputParser('\n')
+
+            prompt_template = self._load_and_prepare_prompt(
+                'skills', map_data, parser, self.msg_chain)
+
+            skills_out = self._invoke_chain(prompt_template, parser)
+            list_of_skills: List[Skill] = []
+            for s in skills_out:
+                sk = s.split(':')
+                s = Skill(key=sk[0], value=sk[1] if len(sk)>1 else '')
+                list_of_skills.append(s)
+
+            self.resume.skills = list_of_skills
+        except Exception as e:
+            print(f'Exception in generate_tailored_skills_section_ai(). Error {e}')
+        return '\n'.join([s.text() for s in self.resume.skills])
+
+    def generate_career_summary_ai(self, n_words=250) -> str:
+        print('In: generate_career_summary_ai()')
+        try:
+            map_data = self.build_default_map()
+            map_data["n_words"] = n_words
+
+            parser = DelimitedListOutputParser('\n')
+
+            prompt_template = self._load_and_prepare_prompt(
+                'career_summary', map_data, parser, self.msg_chain)
+
+            self.resume.career_summary = self._invoke_chain(prompt_template, parser)
+
+        except Exception as e:
+            printred(f"Error generating career summary: {e}")
+            self.logger.error(f"Error generating career summary: {e}")
+
+        return '\n'.join(self.resume.career_summary)
+
+    def generate_work_experience_key_achievements_ai(self, k, we):
+        achivements = []
+        try:
+            map = self.build_default_map()
+            map['n_lines'] = max(6 - 1 * k, 2)  # longer description in more recent time
+            map["exp_title"]= we.position
+            map["work_experience"] = we.text()
+
+            parser = DelimitedListOutputParser('\n')
+            prompt = self._load_and_prepare_prompt(prompt_key='work_experience_key_results', map_data=map,
+                                                   parser=parser, msg_chain=self.msg_chain)
+            we.key_responsibilities = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain)
+
+            # p_ = PromptManager().load_prompt('work_experience_key_results', map={
+            #     "work_experience": we.text(),
+            #     "exp_title": we.position,
+            #     "n_lines": n_lines
+            # })
+            # p_parameter_list = list(set(re.findall(r'\{(.*?)\}', p_)))
+            # prompt = self._preprocess_template_string(
+            #     p_, format_instructions=parser.get_format_instructions())
+            # msg_chain.extend([
+            #     ("human", prompt)
+            # ])
+            # prompt_template = ChatPromptTemplate(msg_chain)
+            #
+            # chain = prompt_template | self.llm_good
+            # output = chain.invoke({})
+            # achivements = parser.invoke(output)
+        except Exception as e:
+            self.logger.error(
+                f'Exception while processing work experience key achievements for {we.position} at {we.company}')
+            printcolor(
+                f'Exception while processing work experience key achievements for {we.position} at {we.company}',
+                'blue')
+        return we.key_responsibilities
+
+    def generate_work_experience_summary_ai(self, k: int, we: WorkExperience, min_words: int = 30,
+                                            start_words: int = 100, step_words: int = 15):
+        summary = ''
+        try:
+            # region work summary
+            # compute how many words to generate for the summary. As things are getting older, less text is being generated
+            map = self.build_default_map()
+            map["n_words"] = max(start_words - step_words * k, min_words)  # longer description in more recent time
+            map["work_title"] = we.position
+            map['work_experience'] = we.text()
+            parser = StrOutputParser()
+
+            prompt = self._load_and_prepare_prompt(prompt_key='work_experience_summary', map_data=map,
+                                                   parser=parser, msg_chain=self.msg_chain)
+            summary = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain)
+            # s_ = PromptManager().load_prompt('hawk_system')
+            # p_ = PromptManager().load_prompt('work_experience_summary', map={
+            #     "job_description": self.job_desc if self.job_desc else self.job_description,
+            #     "job_title": self.job_title,
+            #     "career_summary": ','.join([x for x in self.resume.career_summary if x]),
+            #     "career_highlights": ','.join([x.text() for x in self.resume.career_highlights if x]),
+            #     "skills": ','.join([x.text() for x in self.resume.skills if x]),
+            #     "work_experience": we.text(),
+            #     "work_title": we.position,
+            #     "achievements": ','.join([x.text() for x in self.resume.achievements if x]),
+            #     "n_words": n_words
+            # })
+            # p_parameter_list = list(set(re.findall(r'\{(.*?)\}', p_)))
+            # prompt = self._preprocess_template_string(
+            #     p_, add_format_instructions_template=False)
+            # msg_chain.extend([
+            #     ("system", s_),
+            #     ("human", p_)
+            # ])
+            # prompt_template = ChatPromptTemplate(msg_chain)
+            #
+            # chain = prompt_template | self.llm_good
+            # output = chain.invoke({})
+            # summary = parser.invoke(output)
+            # # endregion
+
+        except Exception as e:
+            self.logger.error(
+                f'Exception while processing work experience summary for {we.position} at {we.company} Error:{e}')
+            printcolor(
+                f'Exception while processing work experience summary for {we.position} at {we.company} Error:{e}',
+                'blue')
+        return summary
+
+    def generate_career_highlights_ai(self, msg_chain: List[tuple[str, str]] = [], n_words=40) -> str:
+        print('In: generate_career_highlights_ai()')
+        try:
+            map = self.build_default_map()
+            map["n_words"] = n_words
+
+            parser = DelimitedListOutputParser('\n')
+            prompt = self._load_and_prepare_prompt(prompt_key='career_highlights', map_data=map,
+                                                   parser=parser, msg_chain=self.msg_chain)
+
+            ch = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain)
+
+            chh = []
+            for c in ch:
+                if c:
+                    # if isinstance(c, CareerHighlights):
+                    #     chh.append(ch)
+                    if isinstance(c, str):
+                        cc = c.split(":")
+                        k = cc[0].strip()
+                        if len(cc) > 1:
+                            v = cc[1].strip()
+                        else:
+                            v = ""
+                        chh.append(KeyValue(key=k, value=v))
+            self.resume.career_highlights = chh
+
+            #
+            #
+            #
+            #
+            # map = {
+            #     "job_title": self.job_title,
+            #     "job_description": self.job_desc if self.job_desc else self.job_description,
+            #     "career_summary": self.resume.career_summary,
+            #     "career_highlights": ','.join([x.text() for x in self.resume.career_highlights if x]),
+            #     "skills": ','.join([x.text() for x in self.resume.skills if x]),
+            #     "achievements": ','.join([x.text() for x in self.resume.achievements if x]),
+            #     "n_words": n_words,
+            #     "years_technical_experience":self.resume.personal_information.years_technical_experience,
+            #     "years_leadership_experience":self.resume.personal_information.years_mgmt_experience
+            # }
+            # parser = DelimitedListOutputParser('\n')
+            # s_ = PromptManager().load_prompt('hawk_system')
+            # p_ = PromptManager().load_prompt('career_highlights', map=map)
+            # prompt = self._preprocess_template_string(
+            #     p_, format_instructions=parser.get_format_instructions())
+            # msg_chain.extend([
+            #     ("system", s_),
+            #     ("human", p_)
+            # ])
+            # prompt_template = ChatPromptTemplate(msg_chain)
+            #
+            # chain = prompt_template | self.llm_good
+            # output = chain.invoke({})
+            # ch = parser.invoke(output)
+            # chh = []
+            # for c in ch:
+            #     if c:
+            #         # if isinstance(c, CareerHighlights):
+            #         #     chh.append(ch)
+            #         if isinstance(c, str):
+            #             cc = c.split(":")
+            #             k = cc[0].strip()
+            #             if len(cc) > 1:
+            #                 v = cc[1].strip()
+            #             else:
+            #                 v = ""
+            #             chh.append(KeyValue(key=k, value=v))
+            # self.resume.career_highlights = chh
+            # txt_out = '\n'.join(ch)
+            # print(f"Career Highlights:\n{txt_out}")
+            # return txt_out
+        except Exception as e:
+            printred(f'Exception in career_highlights. Error {e} {traceback.format_exc()}')
+        return '\n'.join([ch.text() for ch in self.resume.career_highlights if ch])
+
+        #
+        #
+        #     parser = DelimitedListOutputParser('\n--') # PydanticOutputParser(pydantic_object=CareerHighlights)
+        #
+        #     p_= PromptManager().load_prompt('career_highlights')
+        #
+        #     prompt_template = self._preprocess_template_string(
+        #         p_, add_format_instructions_template=True)
+        #
+        #     prompt = PromptTemplate(
+        #         template=prompt_template,
+        #         input_variables=["career_summary", "career_highlights", "experiences", "achievements", "skills",
+        #                          "years_of_technical_experience","years_of_leaderhsip_experience"],
+        #         partial_variables={"format_instructions": parser.get_format_instructions()},
+        #     )
+        #     career_summary =  '\n\nCareer Summary:\n'+'\n'.join(self.resume.career_summary)
+        #     career_highlights = '\n\nCareer Highlights:\n'+'\n'.join([h.text() for h in self.resume.career_highlights if h])
+        #     experiences = '' #'\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume_in.work_experiences.work_experiences if x])
+        #     achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
+        #     skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
+        #
+        #     chain = prompt | self.llm_good
+        #     output = chain.invoke({
+        #         "career_summary": career_summary,
+        #         "career_highlights": career_highlights,
+        #         "experiences": experiences,
+        #         "achievements": achievements,
+        #         "skills": skills,
+        #         "years_leadership_experience" : self.resume.personal_information.years_mgmt_experience,
+        #         "years_technical_experience" : self.resume.personal_information.years_technical_experience,
+        #         "job_description": self.job_description
+        #     })
+        #
+        #     ch = parser.invoke(output)
+        #     chh = []
+        #     for c in ch:
+        #         if c:
+        #             # if isinstance(c, CareerHighlights):
+        #             #     chh.append(ch)
+        #             if isinstance(c, str):
+        #                 cc = c.split(":")
+        #                 k = cc[0]
+        #                 if len(cc)>0:
+        #                     v = cc[1]
+        #                 else:
+        #                     v = ""
+        #                 chh.append(KeyValue(key=k, value=v))
+        #
+        #     self.resume.career_highlights = chh
+        #     txt_out = '\n'.join(ch)
+        #     return txt_out
+        # except Exception as e:
+        #     self.logger.error('Error in generate_career_highlights_ai')
+        #     print(f'Exception in generate_career_highlights_ai. Error {e}')
+        #     raise e
+
+    # def _generate_career_highlights_ai(self)->str:
+    #     print('In: generate_career_highlights_ai()')
+    #
+    #     template_string = PromptManager().load_prompt('career_highlights')
+    #
+    #     career_summary =  '\n\nCareer Summary:\n'+self.resume.career_summary.text()
+    #     career_highlights = '\n\nCareer Highlights:\n'+self.resume.career_highlights.text()
+    #     experiences = '\n\nWork Experiences (places of employment):\n'+'\n\n'.join([x.text() for x in self.resume.work_experiences.work_experiences if x])
+    #     achievements = '\n\nAchievements:\n'+'\n'.join([x.text() for x in self.resume.achievements if x])
+    #     skills = '\n\nSkills:\n'+'\n'.join([x.text() for x in self.resume.skills if x])
+    #
+    #
+    #     ch = self.llm_pydantic_invoke(self, pydantic_object=CareerHighlights, prompt_string_template=template_string, llm=self.llm_cheap,
+    #                                   career_summary=career_summary,
+    #                                   career_highlights = career_highlights,
+    #                                   experiences = experiences,
+    #                                   achievements=achievements,
+    #                                   skills=skills,
+    #                                   years_technical_experience = self.resume.personal_information.years_technical_experience,
+    #                                   years_leadership_experience = self.resume.personal_information.years_mgmt_experience,
+    #                                   job_description = self.job_description
+    #                                   )
+    #
+    #     self.resume.career_highlights = ch
+    #
+    #     return self.resume.career_highlights.text()
+
+    def generate_html_resume(self, css = None) -> str:
         print(f'In gpt_resume_job_description.generate_html_resume()', flush=True)
         # Define a list of functions to execute in parallel
 
-        def styles_css_fn() -> str:
-            css = ""
+        #region Generation functions
+        def styles_css_fn(css) -> str:
+            css_content = ""
             try:
-                with open(css_file, 'r') as f:
-                    css = clean_html_string(f.read())
+                with open(css, 'r') as f:
+                    css_content = clean_html_string(f.read())
             except Exception as e:
                 self.logger.error(f"Error during opening css file: {css_file}")
                 print(f"Error during opening css file: {css_file}"
                       f"error: {e}")
-            return css
+            return css_content
 
         def header_fn():
             return self.generate_header()
@@ -787,7 +1091,7 @@ class LLMResumeJobDescription(LLMResumerBase):
             return self.generate_side_projects_section()
 
         def achievements_fn():
-            return self.generate_achievements_section()
+            return self.generate_achievements_section_ai()
 
         def additional_skills_fn():
             return self.generate_additional_skills_section()
@@ -820,14 +1124,19 @@ class LLMResumeJobDescription(LLMResumerBase):
         def professional_experience_fn():
             #return self.generate_professional_experience()
             out = ''
-            for work_experience in self.resume.work_experiences:
-                we = self.generate_work_experience_ai(work_experience)
-                out+=f'\n\n{we}'
-            return out
+            for k in range(len(self.resume.work_experiences)):
+                #self.resume.work_experiences[k] = self.generate_work_experience_ai(self.resume.work_experiences[k],k)
+                kr = self.generate_work_experience_key_achievements_ai(k, self.resume.work_experiences[k] )
+                self.resume.work_experiences[k].key_responsibilities = kr
+
+            for k in range(len(self.resume.work_experiences)):
+                self.resume.work_experiences[k].summary = self.generate_work_experience_summary_ai(k, self.resume.work_experiences[k])
+
+            return '\n\n'.join([we.text() for we in self.resume.work_experiences])
         def academic_appointments_fn():
             return self.generate_academic_appointments()
         def skills_fn():
-            return self.generate_additional_skills_section()
+            return self.generate_tailored_skills_section_ai()
         def languages_fn():
             return self.generate_language_skills_section()
         def footer_fn():
@@ -835,6 +1144,17 @@ class LLMResumeJobDescription(LLMResumerBase):
 
         def position_hierarchy_fn():
             return self.position_hierarchy_ai()
+
+        def create_cover_content_fn():
+            self.resume.cover_text = """
+            I am genuinely excited about the opportunity to contribute to [Company Name] as a [Job Title]. 
+            I would welcome the chance to discuss how my skills and experiences align with your needs in more detail. 
+            I am available at your earliest convenience for an interview and can provide any additional information you require. 
+            Thank you for considering my application. I look forward to the opportunity to contribute to your team
+            """
+            self.resume.cover_text = self.generate_cover_letter_content_ai()
+            return self.resume.cover_text
+
         def create_filename():
             # Get the current time
             now = datetime.now()
@@ -844,21 +1164,26 @@ class LLMResumeJobDescription(LLMResumerBase):
             file_name = f"finalresume.{formatted_time}"
             return file_name
 
+        # endregion
+
+        self.add_system_prompt(map={"job_title":self.job_title, "job_description":self.job_desc})
+
         # Create a dictionary to map the function names to their respective callables
         functions = {
-            #"applicant_name_header": applicant_name_header_fn,
+            "applicant_name_header": applicant_name_header_fn,
             "application_title":application_title_fn,
-            "career_summary": career_summary_fn,
+            "skills":skills_fn,
+            "achievements": achievements_fn,
+            "professional_experience": professional_experience_fn,
             "career_highlights": career_highlights_fn,
-            "career_timeline":career_timeline_fn,
-            #"education_summary":education_summary_fn,
-            #"education": education_x_fn,
-            "professional_experience":professional_experience_fn,
-            #"academic_appointments":academic_appointments_fn,
-            #"achievements":achievements_fn,
-            #"skills":skills_fn,
-            #"languages": languages_fn,
-            #"footer":footer_fn
+            "career_summary": career_summary_fn,
+            "cover": create_cover_content_fn
+            # #"career_timeline":career_timeline_fn,
+            # #"education_summary":education_summary_fn,
+            # #"education": education_x_fn,
+            # #"academic_appointments":academic_appointments_fn,
+            # #"languages": languages_fn,
+            # #"footer":footer_fn
         }
 
         results = {}
@@ -879,7 +1204,9 @@ class LLMResumeJobDescription(LLMResumerBase):
             for section, fn in functions.items():
                 if callable(fn):
                     try:
-                        results[section] = fn()
+                        print(f'About to execute section: {section}')
+                        res = fn()
+                        results[section] = res
                     except Exception as e:
                         print(f'Exception while executing {section}. Error {e}, {traceback.format_exc()}')
                         self.logger.error(f'Exception while executing {section}')
@@ -887,7 +1214,8 @@ class LLMResumeJobDescription(LLMResumerBase):
                 else:
                     results[section] = fn
 
-        fullresume = HtmlResume(self.resume).html()
+        fullresume = HtmlResume(self.resume).html_doc(css_file = css, css_inline=True)
+        cover = HtmlCover(self.resume).html_doc(css_file = css, css_inline=True)
         if not fullresume:
             fullresume_template=None
             fullresume=None
@@ -948,7 +1276,7 @@ class LLMResumeJobDescription(LLMResumerBase):
                 print(f"Error during saving html file: {fname_full}"
                           f"error: {e}")
 
-        return fullresume
+        return fullresume, cover
 
     def llm_pydantic_invoke(self, pydantic_object, prompt_string_template, llm, **kwargs):
         parser = PydanticOutputParser(pydantic_object=pydantic_object)

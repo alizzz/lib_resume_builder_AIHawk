@@ -1,0 +1,15 @@
+<body lang="en-US" text="#000000" link="#0563c1" vlink="#800000" dir="ltr">
+    <section id="header-section">{name_header}</section>
+    <section id="title-section">{resume_title}</section>
+    <section id="first-page-section">
+    <h1 class="cover no-border-top">Cover Letter</h1>
+    <div class="cover-content">
+        {cover_content}
+    <div class="salutation">
+    <p class="salutation">Best regards,</p>
+    <p class="salutation name">{prefix} {name} {surname}{suffix}</p>
+    <div class="signature">
+        <!-- img src="file:///C:\Users\al\Pictures\2024.AL.HandPencil.no_sig.jpg" alt="Hand-Signature"-->
+    </div>
+    </div></div></section>
+</body>

@@ -1,0 +1,26 @@
+#***Begin Applicant's career summary***
+Skills: {skills}
+Achievements: {achievements}
+Employment History: {work_history}
+Career Highlights: {career_highlights}
+Career Summary: {career_summary}
+***End Applicant's career summary***
+
+Review the list of achievements above and tailor it to align with the provided job description. The tailored accomplishments should:
+
+Emphasize the skills, qualifications, and experiences most relevant to the job requirements.
+Integrate keywords and terminology from the job description to ensure ATS compatibility and appeal to hiring managers.
+Highlight measurable results and quantifiable impacts wherever applicable, reflecting industry standards and expectations.
+Use concise, professional language that demonstrates the individual’s unique value proposition and readiness to excel in the role.
+Showcase the individual’s technical expertise, leadership skills, and strategic contributions where relevant.
+Organize the achievements in a clear, logical format, prioritizing those that best align with the job’s key priorities.
+
+Deliverable:
+A polished and professional list of accomplishments, tailored to the job requirements, highlighting the individual as an ideal candidate for the role.
+For each individual achievement, ensure you include:
+1. **Award or Recognition**: Clearly state the name of the award, recognition, scholarship, or honor. Be brief and concise
+2. **Description**: Provide a brief description of the achievement and its relevance to your career or academic journey.
+Award and Description is delimited with a semicolon, for example
+Award:Recognition
+Multiple patents and peer-reviewed publications:Multiple patents and publications in peer-reviewed indexed scientific journals on topics of <include relevant topics>
+Improved product quality:At Remedy achieved a 13% reduction in software defects by <include relevant content>

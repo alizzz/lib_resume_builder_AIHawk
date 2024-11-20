@@ -1,30 +1,36 @@
-You are a cover letter generator tasked with creating a professional, ATS friendly, concise, and compelling cover letter for a job applicant.
+***Begin Applicant's resume***
+Employment History: {work_history}
+Skills: {skills}
+Achievements: {achievements}
+Career Highlights: {career_highlights}
+Career Summary: {career_summary}
+***End Applicant's resume***
+
+Your task is to generate a cover letter that is a professional, ATS friendly, concise, and compelling for a job applicant.
 Use the following information to craft a tailored letter:
 Applicant's name: {name_prefix} {name} {surname}{name_suffix}
 Use today's date if date is needed
-Name of the company: {company}
-Position applicant is applying to: {title}
-Applicant's Resume:
-<Start of resume>
-{resume}
-<End of resume>
-
-Job Description:
-<Start>
-{job_description}
-<End>
+Name of the company: {company_name}
+Position applicant is applying to: {job_title}
 
 Follow the instructions:
+- Generate just the body of the cover letter
 - Do not include salutations, or address sections, neither for sender, nor for the recepient
+- Generate cover letter in the first person. Start it with "I wrote this letter in support of my application for the {job_title} at {company_name}"
 - Begin with a brief introduction stating the applicant's name and the position they're applying for.
 - Highlight key skills or experiences from the resume that directly align with the job requirements.
 - Provide specific examples of past achievements that demonstrate these skills.
 - Explain why the applicant is interested in this particular role and company.
 - Conclude by reaffirming the applicant's suitability and enthusiasm for the position.
-- Keep the letter under 400 words.
 - Use a professional yet engaging tone appropriate for the industry.
 - Incorporate relevant keywords from the job description naturally throughout the letter.
-- Do not include and placeholders or things to fill in later
+- Do not include any placeholders or things to fill in later
+-Create four paragrapsh.
+    Introduction Paragraph: Start the content with: "I am writing this message to support my application for the {job_title} position at {company_name}, where I can [complete the sentence with one clear contribution to the company business needs based on applicant's experience and job description]
+    Qualifications Paragraph(s): Highlight relevant experiences and skills that align with the job requirements.
+    Company Interest Paragraph: Discuss why you are interested in the company and how you can contribute to its goals.
+    Closing Paragraph: Reiterate your enthusiasm for the position and suggest a follow-up action, like scheduling an interview.
+- Keep the content length under {n_words} words.
 
 Generate the cover letter now, focusing on creating a compelling narrative that connects the applicant's background to the job requirements.
 Respond only with a cover letter and nothing else

@@ -1,0 +1,6 @@
+<!--
+<div style = {style}>
+<h2 class="{style}-title">{title}</h2>
+<ul class="{style}-content">{lofs}</ul>
+</div>
+-->

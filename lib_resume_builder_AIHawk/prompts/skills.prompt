@@ -1,0 +1,19 @@
+#***Begin Applicant's career summary***
+Skills: {skills}
+Achievements: {achievements}
+Employment History: {work_history}
+Career Highlights: {career_highlights}
+Career Summary: {career_summary}
+***End Applicant's career summary***
+
+Review the applicant’s skills above and generate a tailored list of skills specifically aligned with the provided job description and organized into six categories: Technical, Leadership and People Management, Business Domain Knowledge, Soft Skills, AI/ML Skills, and Ethics and Governance.
+The list should:
+
+Include keywords and phrases explicitly mentioned or implied in the job description.
+Reflect skills that are generally expected for the role of {job_title} in the industry.
+Incorporate relevant technical and soft skills demonstrated by the applicant’s prior experience.
+Optimize for ATS compatibility by using language and terminology consistent with the job description.
+Showcase the applicant’s unique qualifications and readiness for the role by emphasizing relevant and impactful skills.
+Be formatted as a comma-delimited list under each category, with the category key followed by a colon. Ensure each category is on a separate line.
+
+Ensure the skills align with the job description and industry standards, showcasing the applicant as an ideal candidate for the role of {job_title}.

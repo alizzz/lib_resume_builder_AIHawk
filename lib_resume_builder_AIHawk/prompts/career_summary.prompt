@@ -1,40 +1,31 @@
-Act as an HR expert and resume writer specializing in ATS-friendly resumes. Your task is to create a professional and polished summary for the resume.
-You are an expert resume writer. Using the applicant's resume information, and the job description, generate an ATS-friendly career summary. Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
+***Begin Applicant's resume***
+Employment History: {work_history}
+Skills: {skills}
+Achievements: {achievements}
+Career Highlights: {career_highlights}
+Career Summary: {career_summary}
+***End Applicant's resume***
 
-** Output Template to use **
-<div>
-    <p class="career-summary">
-       I am a [insert one of: seasoned|knowledgeable|skilled|proficient] [Insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'].
-       I [include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'].
-       During my career [include one or two most important achievements, directly relevant for the job description]
-    <p class="career-summary">[Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
-    <p class="career-summary">[Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead]
-    <p><span class="career-summary-years-technical-experience-highlight">Years of Technical Experience: </span>[Insert total years of technical experience related to the job and a brief description of the experience aligned with the job description]</p>
-    <p><span class="career-summary-years-leadership-experience-highlight">Years of Leadership Experience: </span>[Insert total years of leadership and management experience related to the job]</p>
-    <p><span class="career-summary-contributions-highlight">Contributions:</span>[Highlight key areas where applicant can contribute to the organzation success by considering the job description]</p>
-    <p><span class="career-summary-competencies-highlight">Core Competencies: </span>[Mention 3-5 core competencies that match the job requirements]</p>
-    <p><span class="career-summary-achievement-highlight">Key Achievements: </span>[Insert 1-3 key achievements that show measurable impact and match job needs]</p>
-    <p><span class="career-summary-skills-highlight">Technical/Professional Skills: </span>[Insert technical or professional skills relevant to the job, matching keywords from the job description]</p>
-</div>
+Summarize applicant's career experience ensuring it aligns well with the provided job description, applicant's experience, applicant's skills,
+and the type and quality of work and results generally expected from {job_title}.
+Be specific and relevant to this position. Use varying sentences and speech. Use action word and phrases, do not copy verbatim, adjust and align with job description and reauirements
+Sound human, write at the level of PhD candidate. Vary words and sentence structure.
+Emphasize benefits to the business, such as improved customer satisfaction, employee retention, cost reduction, or other benefits to the business.
+Include specific examples based on provided work experience, job requirements, and expectations for the {job_title}
 
-- **Job Description:**
-  {job_description}
+Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
+Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Limit the output to {n_words} words or less.
+Consider what should be emphiszed based on the keywords and job description, and surround it with <em> tags for bold and emphasize.
+Do it sparringly, only the most important key words and pieces should be included.
+Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
+Output four paragraphs:
+Brief summary of a life-long career experience and achievements.
+Technial summary
+Leadership summary
+Organizational behaviour, such as cross-functional collaboration, and leading without authority successes.
 
-- **Education Summary:**
-  {education_summary}
-
-- **Experience Details:**
-  {experience_details}
-
-- **Minimum Years of Technical Experience:**
-    {min_tech_experience}
-
-- **Minimum Years of Leadership and Management Experience**
-    {min_mgmt_experience}
-
-Instructions:
-
-Use the applicant’s resume for relevant professional experience, achievements, and technical skills.
-Use the job description for the job title, required competencies, expectations, and technical skills.
-Emphasize noticieable and relevant achievements, measurable results, and specific contributions that highlights the fit to the specified role
-Output should be valid HTML code without additional explanations or comments  and also without ```html ```
+Use the following example for the format and type of content you may output. Ground it in the work experience, and align it with the job description:
+  I am a <insert one of: seasoned|knowledgeable|skilled|proficient or other appropriate adjective> <insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'>. I <include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'>. During my career <include two or three most important achievements, directly relevant for the job description>
+ <Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
+ <Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
+ <Include a brief description of organizational behaviour strengths>

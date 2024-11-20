@@ -1,0 +1,1 @@
+<li class='project-line'><span class="key text-highlight">{name}: </span><span class="value description project">{value}</span><span class="link project">{project_url}</span></li>

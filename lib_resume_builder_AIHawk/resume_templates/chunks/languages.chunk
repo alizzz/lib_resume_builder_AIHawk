@@ -1,0 +1,8 @@
+<!--
+<h1 class="section-header">Languages</h1>
+<div align="left" class="languages">
+    <ul class="compact-list languages">
+      {language_rows}
+    </ul>
+</div>
+-->

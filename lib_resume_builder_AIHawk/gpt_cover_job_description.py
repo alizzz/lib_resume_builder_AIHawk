@@ -1,4 +1,3 @@
-import re
 import copy
 import os
 import os.path
@@ -12,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from lib_resume_builder_AIHawk.config import global_config
 from lib_resume_builder_AIHawk.gpt_resumer_base import LLMResumerBase
 from lib_resume_builder_AIHawk.resume import PersonalInformation
+from src.job import Job
 
 load_dotenv()
 # ToDo: make it read config file
@@ -37,21 +37,32 @@ def text_from_html(html:str) ->str:
     return text
 
 class LLMCoverJobDescription(LLMResumerBase):
-    def __init__(self, openai_api_key, strings, resume = None, job_desc:str=None):
-        # LLMResumerBase creates the following three members
-        #self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=0.8))
-        #self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=0.7))
-        #self.strings = strings
+    def __init__(self, openai_api_key, strings, resume = None, job_desc:str=None, job:Job = None):
+        # LLMResumerBase creates the following members
+        # self.llm_cheap = LoggerChatModel(ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=openai_api_key, temperature=tempertature_cheap))
+        # self.llm_good = LoggerChatModel(ChatOpenAI(model_name="gpt-4o", openai_api_key=openai_api_key, temperature=temperature_good))
+        # self.strings = strings
+        # self.system_msg = None
+        # self.resume: Resume = None
+        # self.msg_chain = []
+
         super().__init__(openai_api_key=openai_api_key, strings=strings)
         self.resume_ = resume
         self.job_desc = job_desc
+        self.job_title = None
+        self.job:Job = job
+
+    def set_job(self, job:Job = None, job_desc:str=None, job_title:str=None):
+        if job:
+            self.job = copy.deepcopy(job)
+            if job_title: self.job_title=job_title
+            if job_desc: self.job_desc=job_desc
+        else:
+            if job_title: job_title=job_title
+            if job_desc: job_desc=job_desc
 
     def set_job_description(self, job_desc:str):
         self.job = job_desc
-
-    def set_resume(self, resume):
-        self.resume_ = copy.deepcopy(resume)
-        # printcolor(f'in LLMResumeJobDescription.setresume::self._resume.experience_details[0].position:{self._resume.experience_details[0].position}', "magenta")
 
     def create_header(self, delim = ' | ', pi:PersonalInformation=None):
         chunk_ ="""<div id = "header">< table >< tr >< td class ="left-aligned-column" >< span class ="applicant_name_header" > {name_prefix}{name} {surname}{name_suffix} < /span > < /td >< td class ="right-aligned-column" > < span class ="phone" > {phone} < /span > < span class ="table-cell-delimeter" > {delim_1} < /span > < span class ="email" > {email} < /span > < /td >< / tr > < / table ></div>"""

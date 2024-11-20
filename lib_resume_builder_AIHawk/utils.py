@@ -4,13 +4,56 @@ import time
 import traceback
 import datetime
 
+import pdfkit
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 from langchain_core.messages import AIMessage, AIMessageChunk
+from lib_resume_builder_AIHawk.config import GlobalConfig
+from lib_resume_builder_AIHawk.asset_manager import ChunkManager
 
+global_config = GlobalConfig()
+def read_chunk(fn, path='', ext='chunk', enc='utf-8', **kwargs) -> str:
+    # first check if chunk file exists
+    #
+    # chunk_fname = find_valid_path(file_name=fn, ext=ext,search_path=kwargs.get('search_path'), base_path=global_config.lib_path)
+    #
+    # if not chunk_fname:
+    #     raise FileNotFoundError()
+
+    chunk = ChunkManager().load_chunk(fn, ext)
+    if not chunk:
+        raise FileNotFoundError(f'Failed to load chunk {fn}')
+
+    #remove comments
+    chunk = re.sub(r'<!--.*?-->', '', chunk, flags=re.DOTALL)
+    if chunk:
+        if kwargs:
+            return chunk.format(**kwargs)
+        else:
+            return chunk
+
+    return None
+
+
+def find_valid_path(file_name:str, ext, search_path:list=None, base_path = os.path.dirname(os.path.relpath(__file__))):
+    fn_ext = f'{file_name}.{ext}'
+    if os.path.isfile(file_name): return file_name
+    if os.path.isfile(fn_ext): return fn_ext
+
+    p_ = []
+    path = [base_path] if isinstance(base_path, str) else base_path
+    if search_path: path.extend(search_path)
+    for p in path:
+        p_.append(p)
+        if os.path.isfile(os.path.join(*p_, file_name)): return os.path.join(*p_, file_name)
+        if os.path.isfile(os.path.join(*p_, fn_ext)): return os.path.join(*p_, fn_ext)
+    print(f'WARNING: {file_name} is not found', "yellow")
+    return None
+def is_valid_path(file_name:str, ext, search_path:list=None, base_path = os.path.dirname(os.path.relpath(__file__))):
+    return True if find_valid_path(file_name, ext, search_path, base_path) else False
 
 
 
@@ -24,17 +67,7 @@ def custom_json_serializer(obj):
         return obj.isoformat()  # Convert datetime to ISO string
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
-    #allowed pattern allows valid file names excluding those that start with ., _, __, and end with .py
-    file_dict = {}
-    # Walk through the directory
-    for root, dirs, files in os.walk(directory_path):
-        for file in files:
-            # Split the file name and extension
-            file_name_without_ext, file_ext = os.path.splitext(file)
-            if bool(re.match(allowed_pattern, file)):
-                file_dict[file_name_without_ext] = os.path.join(root,file)
-    return file_dict
+
 
 def get_dict_values_from_files(directory_path: str = '',
                                allowed_pattern=r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
@@ -74,6 +107,43 @@ def create_driver_selenium():
     options = get_chrome_browser_options()  # Usa il metodo corretto per ottenere le opzioni
     service = ChromeService(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=options)
+
+def HTML2PDF(html, pdf=None, css=None, options = None, config=None, return_value = False):
+    def unique_file(fn, counter_width = 4):
+        if not os.path.exists(fn): return fn
+
+        base_name, ext = os.path.splitext(fn)
+        counter = 0
+
+        # Check if filename has an existing counter at the end (like `file_0003.txt`)
+        match = re.search(r".(\d+)$", base_name)
+        if match:
+            counter = int(match.group(1))
+            base_name = base_name[:match.start()]  # Remove existing counter to increment anew
+
+        # Keep incrementing counter until a unique filename is found
+        while os.path.exists(f"{base_name}.{str(counter).zfill(counter_width)}{ext}"):
+            counter += 1
+
+        return f"{base_name}.{str(counter).zfill(counter_width)}{ext}"
+
+
+    try:
+
+        if os.path.isfile(html):
+            # use from_file(...) method
+            pdfc = pdfkit.from_file
+        else:
+            pdfc = pdfkit.from_string
+
+        if pdf:
+            pdf = unique_file(pdf)
+            pdfc(html, pdf, css=css, options=options, configuration=config)
+        else:
+            return pdfc(html, css=css, options=options, configuration=config)
+    except Exception as e:
+        print(f'Failed pdfkit.from_string(html)')
+    return None
 
 def HTML_to_PDF(FilePath, sleep_time:int=2, by:(By, str)=(None, None)):
     # Validazione e preparazione del percorso del file

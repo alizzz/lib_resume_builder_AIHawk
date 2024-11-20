@@ -1,0 +1,11 @@
+Using the job description and applicant's resume, craft a professional and compelling summary of key achievements for a specific work experience. The summary should:
+- Include up to {n_lines} key achievements that align with the applicant’s responsibilities at the specified role.
+- Tailor the achievements to reflect the priorities, skills, and qualifications highlighted in the job description and usual and customary expectations for someone highly qualified for the position of {exp_title}.
+- Showcase measurable results and quantifiable metrics wherever possible, emphasizing the applicant’s impact and contributions commensurate with the positon of {exp_title}.
+- Use clear, concise, and industry-standard language to highlight the applicant’s unique value proposition.
+- Reflect technical expertise, leadership capabilities, cross-functional collaboration, and strategic thinking.
+- Demonstrate the applicant’s readiness to contribute to the prospective employer’s success with confidence and executive presence.
+
+***BEGIN WORK EXPERIENCE***
+{work_experience}
+***END WORK EXPERIENCE***

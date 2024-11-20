@@ -48,7 +48,7 @@ class DelimitedListOutputParser(ListOutputParser):
         return (
             f"Your response should be a list of values, delimited by `{self.delimiter}`\n"
             f"eg: `foo{self.delimiter} bar{self.delimiter} baz` or `foo{self.delimiter}bar{self.delimiter}baz`\n"
-            f"Do not output ``` or any other delimeters or placeholder with exception only {self.delimiter}"
+            f"Do not output ` or ``` or any other delimeters or placeholder with exception only {self.delimiter}"
         )
 
     def parse(self, text: str) -> List[str]:

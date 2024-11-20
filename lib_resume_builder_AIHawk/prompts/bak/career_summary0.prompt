@@ -3,18 +3,23 @@ Your task is to create a professional and polished summary for the applicant's r
 Using the applicant's resume information as a base and tune to align with the job description, generate an ATS-friendly career summary.
 Respond in a neutral, informative, and professional tone suitable for business or academic contexts. Return just a summary, and nothing else
 In angle brackets are inline instructions. Instruction begins with an open bracket "<" and ends with a closing bracket ">" Replace instruction, including brackets, with the text according to the instructions.
-Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Use the following structure:
-***
-I am a <insert one of: seasoned|knowledgeable|skilled|proficient> <insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'>.
+Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Limit the output to 150 words or less.
+Consider what should be emphiszed based on the keywords and job description, and surround it with <em> tags for bold and emphasize.
+Do it sparringly, only the most important key words and pieces should be included.
+Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
+
+
+Use the following example for the format and type of content you must output:
+
+I am a <insert one of: seasoned|knowledgeable|skilled|proficient or other appropriate adjective> <insert the verb/noun combination that describes applicant, for example 'project manager', or 'data science leader'>.
 I <include what you do for the employer, relevant for the job description, for example, 'I build high performing teams and deliver innovative products that disrupt markets'>.
-During my career <include one or two most important achievements, directly relevant for the job description>
+During my career <include two or three most important achievements, directly relevant for the job description>
 <Include a brief description of technical experience and capablilities that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
 <Include a brief description of leadership and team management experience that closely align with the job description and candidate's professional experience. Do not copy job description verbatim, rephrase it instead>
-***
 
 
-Use the following materials:
-**Resume career summary**
+Use the following materials for context:
+**Resume summary**
 {career_summary}
 
 

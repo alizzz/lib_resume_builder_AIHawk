@@ -1,10 +1,11 @@
+import traceback
 from typing import List, Dict, Optional, Union
 import yaml
 import os.path
 import copy
 import json
 from string import Template
-from pydantic import BaseModel, EmailStr, HttpUrl
+from pydantic import BaseModel, EmailStr, HttpUrl, AnyUrl
 from utils import custom_json_serializer#, class_to_text, create_vector_docs
 from langchain_core.documents import Document as LangchainDoc
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -46,12 +47,23 @@ class PersonalInformation(BaseModel):
     phone_prefix: Optional[str]
     phone: Optional[str]
     email: Optional[EmailStr]
-    github: Optional[HttpUrl]
-    linkedin: Optional[HttpUrl]
+    github: Optional[str]
+    linkedin: Optional[str]
     years_technical_experience: Optional[str]
     years_mgmt_experience: Optional[str]
     name_prefix: Optional[str]
     name_suffix: Optional[str]
+
+    def dict(self, *args, **kwargs):
+        # Call the original .dict() method of BaseModel with super()
+        original_dict = super().dict(*args, **kwargs)
+
+        if 'github' in original_dict:
+            original_dict['github'] = original_dict['github'].__str__()
+        if 'linkedin' in original_dict:
+            original_dict['linkedin'] = original_dict['linkedin'].__str__()
+
+        return original_dict
 
 class Education(BaseModel):
     degree: Optional[str]
@@ -120,10 +132,10 @@ class LegalAuthorization(BaseModel):
     requires_eu_sponsorship: Optional[str]
 
 class Skill(BaseModel):
-    category: Optional[str]
-    skill_lst: Optional[str]
+    key: Optional[str]
+    value: Optional[str]
     def text(self):
-        return f'{self.category}: {self.skill_lst}'
+        return f'{self.key}: {self.value}'
 
 class KeyValue(BaseModel):
     key: Optional[str]
@@ -175,7 +187,7 @@ class Resume(BaseModel):
     education_details: Optional[List[Education]]
     work_experiences: Optional[List[WorkExperience]]
     achievements: Optional[List[Achievement]]
-    skills: Optional[List[KeyValue]]
+    skills: Optional[List[Skill]]
     projects: Optional[List[Project]]
     certifications: Optional[List[str]]
     languages: Optional[List[Language]]
@@ -185,11 +197,27 @@ class Resume(BaseModel):
     self_identification: Optional[SelfIdentification]
     legal_authorization: Optional[LegalAuthorization]
     style_path:Optional[str]
+    cover_text:Optional[List[str]]
 
-    def __init__(self, yaml_str: str):
+    def __init__(self, data):
         try:
-            # Parse the YAML string
-            data = yaml.safe_load(yaml_str)
+            plain_text_resume_str = ''
+            plain_text_resume_data = None
+
+            if isinstance(data, str):
+                if os.path.isfile(data):
+                    with open(data,
+                              "r", encoding='utf-8') as file:
+                        plain_text_resume_str = file.read()
+                else:
+                    plain_text_resume_str = data
+
+                plain_text_resume_data = yaml.safe_load(plain_text_resume_str)
+            elif isinstance(data, dict):
+                plain_text_resume_data = data
+            else:
+                raise AttributeError(f'Unable to initialize Resume - yaml is neither path to the plain_text_resume file, or plain_text_resume str, or dict. It is {type(yaml)}')
+
 
             # Normalize the exam format
             #if 'education_details' in data:
@@ -198,9 +226,12 @@ class Resume(BaseModel):
             #            ed['exam'] = self.normalize_exam_format(ed['exam'])
 
             # Create an instance of Resume from the parsed data
-            super().__init__(**data)
+            super().__init__(**plain_text_resume_data)
             print(f'Resume __init__ completed')
         except yaml.YAMLError as e:
             raise ValueError("Error parsing YAML file.") from e
+        except AttributeError as e:
+            print(f'{e}: {traceback.format_exc()}')
+            raise e
         except Exception as e:
             raise Exception(f"Unexpected error while parsing YAML: {e}") from e
