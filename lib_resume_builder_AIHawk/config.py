@@ -1,16 +1,28 @@
 import datetime
 import inspect
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, HttpUrl
 
-from lib_resume_builder_AIHawk.utils import get_dict_names_from_dir
-
 load_dotenv()
 DEBUG = os.environ.get('DEBUG', '').lower() in ['y', 'yes', 'true', 't', '1', 'on']
+
+def get_dict_names_from_dir(directory_path, allowed_pattern = r'^(?![_\.]{1,2})[a-zA-Z0-9_-]+(?!\.py$)(\.[a-zA-Z0-9]+)?$'):
+    #allowed pattern allows valid file names excluding those that start with ., _, __, and end with .py
+    file_dict = {}
+    # Walk through the directory
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            # Split the file name and extension
+            file_name_without_ext, file_ext = os.path.splitext(file)
+            if bool(re.match(allowed_pattern, file)):
+                file_dict[file_name_without_ext] = os.path.join(root,file)
+    return file_dict
+
 class JobContext(BaseModel):
     job_description_url: Optional[HttpUrl]=None
     job_description_raw_html: Optional[str]=None
@@ -62,6 +74,7 @@ class GlobalConfig:
         self.CONTEXT: Context = os.environ.get('CONTEXT', None)
         self.html_template_chunk = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'resume_templates', 'chunks'))
         self.prompt_dict = get_dict_names_from_dir(os.path.join(os.path.dirname(__file__), 'prompts'))
+        self.lib_path = os.path.dirname(os.path.relpath(__file__))
 
         #{
         #    'name_header': 'name_header.chunk',

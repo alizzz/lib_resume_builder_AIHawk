@@ -4,11 +4,10 @@ from dotenv import load_dotenv
 import os
 import re
 
-from lib_resume_builder_AIHawk.utils   import is_valid_path, read_chunk
+from lib_resume_builder_AIHawk.utils import is_valid_path, read_chunk
 
 from lib_resume_builder_AIHawk.config import GlobalConfig
 from lib_resume_builder_AIHawk.html_doc import HtmlDoc, format_map
-#from lib_resume_builder_AIHawk.utils import read_chunk
 from lib_resume_builder_AIHawk.resume import Resume, PersonalInformation, WorkExperience, Education
 
 global_config = GlobalConfig()
