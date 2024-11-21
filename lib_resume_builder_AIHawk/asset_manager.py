@@ -17,7 +17,9 @@ class AssetManager:
         try:
             file_path = os.path.join(self.base_path, self.path, f"{key}")
             file_path_ext = os.path.join(self.base_path, self.path, f"{key}.{ext}")
-            if os.path.isfile(file_path):
+            if os.path.isfile(key):
+                fp = key
+            elif os.path.isfile(file_path):
                 fp = file_path
             elif os.path.isfile(file_path_ext):
                 fp = file_path_ext

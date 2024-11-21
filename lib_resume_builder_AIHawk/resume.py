@@ -3,12 +3,8 @@ from typing import List, Dict, Optional, Union
 import yaml
 import os.path
 import copy
-import json
-from string import Template
 from pydantic import BaseModel, EmailStr, HttpUrl, AnyUrl
-from utils import custom_json_serializer#, class_to_text, create_vector_docs
-from langchain_core.documents import Document as LangchainDoc
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 
 def read_chunk(fn, path='', enc='utf-8', **kwargs):
     if not (os.path.exists(fn) and os.path.isfile(fn)):
