@@ -15,8 +15,7 @@ Include specific examples based on provided work experience, job requirements, a
 
 Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
 Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Limit the output to {n_words} words or less.
-Consider what should be emphiszed based on the keywords and job description, and surround it with <em> tags for bold and emphasize.
-Do it sparringly, only the most important key words and pieces should be included.
+Emphasize most impactful and relevant words based on job description, and surround it with <em> tags for bold and emphasize.
 Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
 Output four paragraphs:
 Brief summary of a life-long career experience and achievements.

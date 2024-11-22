@@ -10,7 +10,7 @@ from lib_resume_builder_AIHawk.utils import HTML2PDF  # this one prints using pd
 
 
 from src.job import Job
-
+from src.g_sheets import GSheets
 
 class FacadeManager:
     def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path, selected_style = None):
@@ -71,34 +71,34 @@ class FacadeManager:
 #        htmlResume = HtmlResume(self.resume_generator.resume_object, css = self.style_manager.get_style_path(self.selected_style) )
 #        pass
 
-    def _resume_html(self, job_title: object = None, job_description_url: object = None, job_description_text: object = None,
+    def _resume_html(self, job_description_url: object = None,
                    html_file_name: object = None,
-                   delete_html_file: object = True, job = None) -> str:
+                   delete_html_file: object = True, job:Job = None) -> str:
 
-        if (job_description_url is not None and job_description_text is not None):
-            raise ValueError("Exactly one of 'job_description_url' or 'job_description_text' must be provided..")
+        if (job_description_url is not None and Job.description is not None):
+            raise ValueError("Exactly one of 'job_description_url' or 'Job.description' must be provided..")
 
         if self.selected_style is None:
             raise ValueError("You must choose a style before generating the PDF.")
 
         style_path = self.style_manager.get_style_path(self.selected_style)
 
-        if job_description_url is None and job_description_text is None:
+        if job_description_url is None and job.description is None:
             html, cover = self.resume_generator.create_resume(style_path)
-        elif job_description_url is not None and job_description_text is None:
+        elif job_description_url is not None and job.description is None:
             html, cover = self.resume_generator.create_resume_job_description_url(style_path, job_description_url, job=job)
-        elif job_description_url is None and job_description_text is not None:
-            html, cover = self.resume_generator.create_resume_job_description_text(style_path, job_description_text, job_title, job=job)
+        elif job_description_url is None and job.description is not None:
+            html, cover = self.resume_generator.create_resume_job_description_text(style_path, job=job)
         else:
                 return None
         return html, cover
 
-    def pdf_base64(self, job_title: object = None, job_description_url: object = None, job_description_text: object = None,
+    def pdf_base64(self, job_description_url: object = None,
                    resume_html_file_name = None,
                    delete_html_file = False, job:Job=None) -> object:
 
         USE_PDFKIT = True #ToDo - add to the configuration
-        resume_html, cover_html = self._resume_html(job_title, job_description_url, job_description_text = job_description_text, job=job)
+        resume_html, cover_html = self._resume_html(job_description_url, job=job)
 
         with open(resume_html_file_name, 'w', encoding='utf-8') as html_file:
             html_file.write(resume_html)
@@ -112,6 +112,15 @@ class FacadeManager:
         with open(f'{os.path.splitext(resume_html_file_name)[0]}.yaml', 'w', encoding='utf-8') as yaml_file:
             yaml.dump(self.resume_generator.resume_object.dict(), yaml_file)
 
+        #gsheets update
+        #ID	Company	Status	Position	Salary Range	Office Policy   Location    Notes	Job Posting	Path	Date Job Was Found
+        try:
+            sheets_row_values = [[job.id, job.company, 'Found', job.title, job.compensation, job.office_policy, job.location, '',job.link, job.get_fname(), job.get_dt_string(fmt='%Y-%m-%d')]]
+            gs = GSheets()
+            row = gs.find_first_non_empty_cell_in_column('hawk', 'C')
+            gs.update('hawk',f'B{row}', sheets_row_values)
+        except Exception as e:
+            print(f'Failed saving data to GSheets for id:{job.id} Error:{e}')
         pdf_base64 = None
         if USE_PDFKIT:
             print(f'Using HTML2PDF aka pdfkit/wkhtmltopdf based pdf generator')

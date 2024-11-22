@@ -56,26 +56,27 @@ class ResumeGenerator:
 
 
     def create_resume(self, style_path):
+        print("WARNING: In create_resume() - SHOULD NOT BE HERE")
         strings = load_module(global_config.STRINGS_MODULE_RESUME_PATH, global_config.STRINGS_MODULE_NAME)
         gpt_answerer = LLMResumer(global_config.API_KEY, strings)
-        resume, cover = self._create_resume(gpt_answerer, style_path, job=job)
+        resume, cover = self._create_resume(gpt_answerer, style_path, job=None)
         return resume, cover
 
     def create_resume_job_description_url(self, style_path: str, url_job_description: str, job_title:str, job:Job=None):
         strings = load_module(global_config.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH, global_config.STRINGS_MODULE_NAME)
         gpt_answerer = LLMResumeJobDescription(global_config.API_KEY, strings)
-        gpt_answerer.set_job_description_from_url(url_job_description)
-        gpt_answerer.set_job_title(job_title)
-        gpt_answerer.set_job(job)
+        # gpt_answerer.set_job_description_from_url(url_job_description)
+        # gpt_answerer.set_job_title(job_title)
+        #gpt_answerer.set_job(job)
         resume, cover = self._create_resume(gpt_answerer, style_path, job=job)
         return resume, cover
 
-    def create_resume_job_description_text(self, style_path: str, job_description_text: str, job_title:str, job:Job=None):
+    def create_resume_job_description_text(self, style_path: str, job:Job=None):
         strings = load_module(global_config.STRINGS_MODULE_RESUME_JOB_DESCRIPTION_PATH, global_config.STRINGS_MODULE_NAME)
         gpt_answerer = LLMResumeJobDescription(global_config.API_KEY, strings)
-        gpt_answerer.set_job_description_from_text(job_description_text)
-        gpt_answerer.set_job_title(job_title)
-        gpt_answerer.set_job(job)
-        gpt_answerer.set_default_injection_prompt()
+        # gpt_answerer.set_job_description_from_text(job_description_text)
+        # gpt_answerer.set_job_title(job_title)
+        #gpt_answerer.set_job(job)
+        #gpt_answerer.set_default_injection_prompt()
         resume, cover = self._create_resume(gpt_answerer, style_path, job=job)
         return resume, cover
