@@ -30,40 +30,11 @@ class HtmlResume(HtmlDoc):
         css_content = read_chunk(fn=css, path=path)
         self.css = re.sub(r"/\*.*?\*/", "", css_content)
 
-
     def set_html_template(self, html_template_file, path=None):
         self.html_template = os.path.join(path, html_template_file) if path else html_template_file
 
-    # def html_doc(self, css_file, css_inline=True, html_doc_template=None, doc_title:str = 'Job Application Resume', doc_chunk = 'html_doc'):
-    #     return super().html_doc(css_file, css_inline, html_doc_template, doc_title, doc_chunk)
-
-    # def html_head(self, css_file=None, css_include=True, css_text=None, doc_title='Resume'):
-    #     css_ = ''
-    #     head_chunk = ''
-    #     try:
-    #         head_chunk = read_chunk('html_head')
-    #         if css_file or css_text:
-    #             # css_text takes precedence. if it is supplied, it is used, file is not being loaded
-    #             # also, if it is supplied, it is going to be included inline, css_inline parameter is ignored
-    #             if css_text:
-    #                 css_ = f'<style type="text/css">{css_text}</style>'
-    #             else:
-    #                 if css_include: #it should be included inline
-    #                     #load content from file
-    #                     css_content = read_chunk(css_file)
-    #                     #clean it
-    #                     css_text = re.sub(r"/\*.*?\*/", "", css_content)
-    #                     css_ = f'<style type="text/css">{css_text}</style>'
-    #                 else:
-    #                     css_=f'<link rel="stylesheet" href="{css_file}" type="text/css">'
-    #
-    #     except Exception as e:
-    #             print(f'Failed to set CSS - html_head error {e} {traceback.format_exc()}')
-    #
-    #     return head_chunk.format(doc_title=doc_title, css=css_)
     def html_body(self):
         body_chunk = read_chunk('resume_body')
-
         map = {
             "name_header": self.header('name_header'),
             "resume_title": self.title(),
@@ -79,7 +50,6 @@ class HtmlResume(HtmlDoc):
             "interests":self.list_of_strings(self.resume.interests, title='interests')
         }
         return body_chunk.format_map(map)
-
     def projects(self):
         prjs_chunk = read_chunk('projects')
         prj_row_chunk = read_chunk('project_li')
@@ -91,7 +61,6 @@ class HtmlResume(HtmlDoc):
             return prjs_chunk.format(project_rows=''.join(rows))
         else:
             return "<!-- projects -->"
-
     def certifications(self):
         return ''
     def languages(self):
@@ -107,14 +76,12 @@ class HtmlResume(HtmlDoc):
         return "<!-- languages -->"
     def interests(self):
         return ''
-
     def title(self):
         title_chunk = read_chunk('application_title')
         return title_chunk.format(resume_title=self.resume.resume_title)
     def header(self, chunk='name_header')->str:
         chunk_html = read_chunk(chunk)
         return chunk_html.format_map(format_map(self.resume.personal_information))
-
     def career_summary(self)->str:
         try:
             career_summary_chunk = read_chunk('career_summary')
@@ -199,12 +166,33 @@ class HtmlResume(HtmlDoc):
         return exp_timeline_chunk.format(exp_timeline_rows=exp_timeline_rows)
 
     def work_experiences(self)->str:
+        def exp_header(exp:WorkExperience):
+            work_exp_header_chunk = read_chunk('exp_details_row_header')
+            return work_exp_header_chunk.format(company=exp.company, position=exp.position, location=exp.location, employment_period=exp.employment_period)
+        def exp_responsibilities(exp:WorkExperience):
+            resp_chunk = read_chunk("exp_key_responsib")
+            resp_row_chunk=read_chunk("exp_key_responsib_row")
+            exp_kr_rows = []
+            if exp.key_responsibilities:
+                for keyresp_row in exp.key_responsibilities:
+                    if keyresp_row:
+                        exp_kr_rows.append(resp_row_chunk.format(exp_key_responsibility_row=keyresp_row))
+
+            exp_key_resps_rows = '\n'.join(exp_kr_rows) if exp_kr_rows else ''
+            return resp_chunk.format(exp_key_resp_rows=exp_key_resps_rows)
+
+
         work_exp_chunk = read_chunk('exp_details')
+        work_exp_row_chunk = read_chunk('exp_details_row')
         exp_details_row = ''
         for exp in self.resume.work_experiences:
             if exp:
-                map = self.work_experience_map(exp)
-                work_exp_row_chunk = read_chunk('exp_details_row')
+                map = {}
+                #map = self.work_experience_map(exp)
+                map["prof_exp_header"] = exp_header(exp)
+                map["exp_summary"]=exp.summary
+                map["exp_key_resps"] = exp_responsibilities(exp)
+                map["exp_skills"] = read_chunk('exp_skills').format(exp_skills=', '.join(exp.skills_acquired))
                 exp_details_row+=work_exp_row_chunk.format_map(map)
             else:
                 print('Warning: Resume work experience is empty')

@@ -25,7 +25,6 @@ from langchain_core.messages.human import HumanMessage
 from langchain_core.messages.system import SystemMessage
 from langchain_core.messages.base import BaseMessage
 
-import job
 from lib_resume_builder_AIHawk.html_doc import HtmlDoc
 from lib_resume_builder_AIHawk.OutputParsers import DelimitedListOutputParser
 from lib_resume_builder_AIHawk.asset_manager import PromptManager
@@ -217,8 +216,8 @@ class LLMResumeJobDescription(LLMResumerBase):
         map={"job_description":self.job.description, "job_title":self.job.title, "job_id":self.job.id, "id":self.job.id}
         prompt = self._load_and_prepare_prompt(prompt_key='job_description_summary_', map_data=map,
                                                parser=parser, msg_chain=self.msg_chain, no_system_prompt=True)
-        self.job.job_description_summary = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain)
-
+        self.job.job_description_summary = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain, llm=self.llm_good)
+        print(f"In LLMResumeJobDescription::summarize_job_description: {self.job.job_description_summary[:500]}")
         return self.job.job_description_summary
 
     def set_job_description_from_text(self, job_description_text: object) -> object:

@@ -3,7 +3,6 @@ Employment History: {work_history}
 Skills: {skills}
 Achievements: {achievements}
 Career Highlights: {career_highlights}
-Career Summary: {career_summary}
 ***End Applicant's resume***
 
 Summarize applicant's career experience ensuring it aligns well with the provided job description, applicant's experience, applicant's skills,
@@ -14,9 +13,10 @@ Emphasize benefits to the business, such as improved customer satisfaction, empl
 Include specific examples based on provided work experience, job requirements, and expectations for the {job_title}
 
 Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
-Ensure that the summary is clear, attractive, and demonstrates the applicant’s strong fit for the job. Limit the output to {n_words} words or less.
-Emphasize most impactful and relevant words based on job description, and surround it with <em> tags for bold and emphasize.
-Make text well written and easy to read. Keep it short and to the point but cover most of the essential job requirements. Limit to {n_words} words or less.
+Ensure that the summary is clear, attractive, and demonstrates the applicant’s executive presense, technical capabilities, and strong fit for the job. Limit the output to {n_words} words or less.
+Identify the most important keywords, key phrases, or power words that are critical to demonstrating applicant's fit for the role or requirements. Surround each identified keyword or key phrase with <em> tags to emphasize its importance.
+
+Make text well written and easy to read. Keep it short and to the point but cover all essential job requirements. Limit to {n_words} words or less.
 Output four paragraphs:
 Brief summary of a life-long career experience and achievements.
 Technial summary

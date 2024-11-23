@@ -115,10 +115,15 @@ class FacadeManager:
         #gsheets update
         #ID	Company	Status	Position	Salary Range	Office Policy   Location    Notes	Job Posting	Path	Date Job Was Found
         try:
-            sheets_row_values = [[job.id, job.company, 'Found', job.title, job.compensation, job.office_policy, job.location, '',job.link, job.get_fname(), job.get_dt_string(fmt='%Y-%m-%d')]]
+            gsheets_row_values = [[job.get_dt_string(fmt='%Y-%m-%d'), job.id, job.company, 'Found', job.title, job.compensation, job.office_policy, job.location, '',job.link, job.get_fname(), job.get_dt_string(fmt='%Y-%m-%d')]]
             gs = GSheets()
-            row = gs.find_first_non_empty_cell_in_column('hawk', 'C')
-            gs.update('hawk',f'B{row}', sheets_row_values)
+            cells = gs.find('hawk', "A:B", job.id)
+            if not cells:
+                row = gs.find_first_non_empty_cell_in_column('hawk', 'B')
+                gs.update('hawk',f'A{row}', gsheets_row_values)
+            else:
+                c, r = gs.split_RC_into_R_and_C(cells[0])
+                gs.update('hawk', f'A{r}', gsheets_row_values)
         except Exception as e:
             print(f'Failed saving data to GSheets for id:{job.id} Error:{e}')
         pdf_base64 = None
