@@ -9,3 +9,5 @@ Using the job description and applicant's resume, craft a professional and compe
 ***BEGIN WORK EXPERIENCE***
 {work_experience}
 ***END WORK EXPERIENCE***
+
+Do not output dash, or any other formatting in front of the text

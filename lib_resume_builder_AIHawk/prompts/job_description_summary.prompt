@@ -1,29 +1,57 @@
-As a seasoned HR expert, your task is to identify and outline the key skills and requirements necessary for the position of this job.
-Use the provided job description as input to extract all relevant information.
-This will involve conducting a thorough analysis of the job's responsibilities and the industry standards.
-You should consider both the technical and soft skills needed to excel in this role.
-Additionally, specify any educational qualifications, certifications, or experiences that are essential.
-Your analysis should also consider future trends and how they might affect the required competencies.
-Make sure it is a comprehensive content. It will be used to prepare a tuned and aligned applicant's resume, that will position applicant to be hired.
+Role: Experienced Job Description Analyst and Resume Writer
+Objective: Analyze a given job description for {job_title} to create a structured, clear, and actionable summary that can be used to tailor an applicant's resume effectively.
 
-Rules:
-Remove boilerplate text
-Include only relevant information to match the job description against the resume.
+1. List of Requirements (Explicit and Implied)
+Explicit Requirements for the role of {job_title}:
+  Education, Experience, and Certifications:
+Break down key qualifications such as required degrees, years of experience, and necessary certifications into clear, concise points.
 
-# Analysis Requirements
-Your analysis should include the following sections:
-Technical Skills: List all the specific technical skills required for the role based on the responsibilities described in the job description.
-Soft Skills: Identify the necessary soft skills, such as communication abilities, problem-solving, time management, etc.
-Educational Qualifications and Certifications: Specify the essential educational qualifications and certifications for the role.
-Professional Experience: Describe the relevant work experiences that are required or preferred.
+Technical Skills:
+  Identify specific tools, software, methodologies, programming languages, certifications, or technical frameworks emphasized in the job description.
 
-# Final Result:
-Your analysis should be structured in a clear and organized document with distinct sections for each of the points listed above. Each section should contain:
-- Explicit: section requirements strictly exptracted from the job description
-- Implicity: Something that may not be directly measured, but usually required or expected from a candidate for the position {}.
+Leadership and Management Skills:
+  Highlight skills like team leadership, strategic thinking, conflict resolution, mentoring, and decision-making capabilities.
 
+Collaboration and Organizational Skills:
+  Capture skills related to cross-functional teamwork, stakeholder communication, change management, and alignment with organizational culture.
+
+Implied Requirements:
+Unique Attributes:
+Identify industry-specific expertise, soft skills, or values alignment that enhance a candidate's suitability for the role.
+"Must-Have" vs. "Nice-to-Have":
+Differentiate between essential skills and qualifications versus those that are desirable but not critical.
+
+Unstated Expectations:
+   Note any expectations or requirements that may not be directly stated but are typically expected for the position.
+
+2. Who the Organization is Looking For
+Specific Skills and Traits:
+Summarize the specific skills and personal attributes that are important to the employer.
+Include both technical competencies and soft skills such as adaptability, problem-solving, and cultural fit.
+
+Values Alignment:
+Identify any alignment with the organization's core values or mission that the ideal candidate should embody.
+
+3. What the Applicant is Expected to Work On
+Types of Projects and Problems:
+Provide a summary of the types of projects, tasks, or challenges the applicant is expected to handle if hired.
+Highlight any specific responsibilities or areas of focus mentioned in the job description.
+
+Additional Instructions
+Content Refinement:
+Eliminate generic or repetitive text that does not offer actionable insight into the role requirements.
+Remove unnecessary boilerplate to ensure the analysis is concise and focused.
+Structure:
+Organize the analysis into clear sections corresponding to each of the points listed above.
+Ensure each section distinctly separates explicit requirements from implicit expectations.
+Final Output
+Concise Summary:
+Generate a summary that can be directly used to tailor and align the applicant’s resume without missing important points.
+Emphasize the most critical skills, achievements, and experiences relevant to the role and the expected work.
+
+Purpose: This structured analysis will help highlight the most important aspects of the job description, allowing the applicant to customize their resume to showcase the most relevant qualifications and experiences, thereby enhancing their suitability for the role.
 
 # Job Description:
 ```
-{text}
+{job_description}
 ```

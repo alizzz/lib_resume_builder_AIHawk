@@ -214,10 +214,10 @@ class LLMResumeJobDescription(LLMResumerBase):
 
         parser = StrOutputParser()
         map={"job_description":self.job.description, "job_title":self.job.title, "job_id":self.job.id, "id":self.job.id}
-        prompt = self._load_and_prepare_prompt(prompt_key='job_description_summary_', map_data=map,
+        prompt = self._load_and_prepare_prompt(prompt_key='job_description_summary', map_data=map,
                                                parser=parser, msg_chain=self.msg_chain, no_system_prompt=True)
         self.job.job_description_summary = self._invoke_chain(prompt, parser, msg_chain=self.msg_chain, llm=self.llm_good)
-        print(f"In LLMResumeJobDescription::summarize_job_description: {self.job.job_description_summary[:500]}")
+        print(f"In LLMResumeJobDescription::summarize_job_description: {self.job.job_description_summary[:200]}")
         return self.job.job_description_summary
 
     def set_job_description_from_text(self, job_description_text: object) -> object:
@@ -257,7 +257,7 @@ class LLMResumeJobDescription(LLMResumerBase):
         chain = prompt | self.llm_cheap | StrOutputParser()
         output = chain.invoke({
             "education_details": self.resume.education_details,
-            "job_description": self.job_description
+            "job_description": self.job.job_description_summary
         })
         return output
 
@@ -323,46 +323,47 @@ class LLMResumeJobDescription(LLMResumerBase):
             "achievements": ','.join([x.text() for x in self.resume.achievements if x])
             }
 
+
             return PromptManager().load_prompt(default_injection_prompt, map)
 
-    def _load_and_prepare_prompt(self,  prompt_key: str, map_data: dict= {}, parser=None, msg_chain: List[BaseMessage]=[],
-                                 do_not_use_long_message_chain:bool = True, no_system_prompt:bool=False) -> ChatPromptTemplate:
-        try:
-            if not parser:
-                parser = StrOutputParser()
-
-            if isinstance(parser, StrOutputParser):
-                format_instructions = "Provide a plain text response without any extra formatting"
-            else:
-                try:
-                    format_instructions = parser.get_format_instructions()
-                except:
-                    format_instructions = ''
-
-            prompt_template = PromptManager().load_prompt(prompt_key, map=map_data)
-            formatted_prompt = self._preprocess_template_string(
-                prompt_template, format_instructions=format_instructions
-            )
-
-            #Note: To maintain continuity of responses we need to send msg_chain
-            #But it is expensive - a lot of tokens in the chain
-            #Also every requiest is pretty much self-sufficient, and does not depend on previous answers
-            #therefore here we reduce number of messages in the chain, and pretend that this is the first message
-            human_message = HumanMessage(formatted_prompt, prompt_key=prompt_key, job_id=map_data.get("job_id"))
-
-            msg_chain.append(human_message)
-            if do_not_use_long_message_chain:
-                msg = [SystemMessage(self.system_msg)] if (not no_system_prompt and self.system_msg)  else []
-
-                msg.append(human_message)
-            else:
-                msg = [m for m in msg_chain]
-
-            return ChatPromptTemplate(msg)
-        except Exception as e:
-            printred(f"Error loading or preparing prompt {prompt_key}: {e}")
-            self.logger.error(f"Error loading or preparing prompt {prompt_key}: {e}")
-            raise e
+    # def _load_and_prepare_prompt(self,  prompt_key: str, map_data: dict= {}, parser=None, msg_chain: List[BaseMessage]=[],
+    #                              do_not_use_long_message_chain:bool = True, no_system_prompt:bool=False) -> ChatPromptTemplate:
+    #     try:
+    #         if not parser:
+    #             parser = StrOutputParser()
+    #
+    #         if isinstance(parser, StrOutputParser):
+    #             format_instructions = "Provide a plain text response without any extra formatting"
+    #         else:
+    #             try:
+    #                 format_instructions = parser.get_format_instructions()
+    #             except:
+    #                 format_instructions = ''
+    #
+    #         prompt_template = PromptManager().load_prompt(prompt_key, map=map_data)
+    #         formatted_prompt = self._preprocess_template_string(
+    #             prompt_template, format_instructions=format_instructions
+    #         )
+    #
+    #         #Note: To maintain continuity of responses we need to send msg_chain
+    #         #But it is expensive - a lot of tokens in the chain
+    #         #Also every requiest is pretty much self-sufficient, and does not depend on previous answers
+    #         #therefore here we reduce number of messages in the chain, and pretend that this is the first message
+    #         human_message = HumanMessage(formatted_prompt, prompt_key=prompt_key, job_id=map_data.get("job_id"))
+    #
+    #         msg_chain.append(human_message)
+    #         if do_not_use_long_message_chain:
+    #             msg = [SystemMessage(self.system_msg)] if (not no_system_prompt and self.system_msg)  else []
+    #
+    #             msg.append(human_message)
+    #         else:
+    #             msg = [m for m in msg_chain]
+    #
+    #         return ChatPromptTemplate(msg)
+    #     except Exception as e:
+    #         printred(f"Error loading or preparing prompt {prompt_key}: {e}")
+    #         self.logger.error(f"Error loading or preparing prompt {prompt_key}: {e}")
+    #         raise e
 
     def _invoke_chain(self, prompt_template, parser, msg_chain: List[BaseMessage]=[], key:str=None, llm:LoggerChatModel=None):
         try:

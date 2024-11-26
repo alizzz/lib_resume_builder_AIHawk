@@ -10,7 +10,10 @@ from lib_resume_builder_AIHawk.utils import HTML2PDF  # this one prints using pd
 
 
 from src.job import Job
-from src.g_sheets import GSheets
+from src.g_data import GSheets, GDrive
+from src.global_config import GlobalConfigSingle
+
+gc = GlobalConfigSingle.create()
 
 class FacadeManager:
     def __init__(self, api_key, style_manager, resume_generator, resume_object, log_path, selected_style = None):
@@ -114,26 +117,39 @@ class FacadeManager:
 
         #gsheets update
         #ID	Company	Status	Position	Salary Range	Office Policy   Location    Notes	Job Posting	Path	Date Job Was Found
-        try:
-            gsheets_row_values = [[job.get_dt_string(fmt='%Y-%m-%d'), job.id, job.company, 'Found', job.title, job.compensation, job.office_policy, job.location, '',job.link, job.get_fname(), job.get_dt_string(fmt='%Y-%m-%d')]]
-            gs = GSheets()
-            cells = gs.find('hawk', "A:B", job.id)
-            if not cells:
-                row = gs.find_first_non_empty_cell_in_column('hawk', 'B')
-                gs.update('hawk',f'A{row}', gsheets_row_values)
-            else:
-                c, r = gs.split_RC_into_R_and_C(cells[0])
-                gs.update('hawk', f'A{r}', gsheets_row_values)
-        except Exception as e:
-            print(f'Failed saving data to GSheets for id:{job.id} Error:{e}')
         pdf_base64 = None
         if USE_PDFKIT:
             print(f'Using HTML2PDF aka pdfkit/wkhtmltopdf based pdf generator')
             HTML2PDF(resume_html, f'{os.path.splitext(resume_html_file_name)[0]}.pdf')
             HTML2PDF(cover_html, f'{os.path.splitext(cover_html_file_name)[0]}.pdf')
+
         else:
-            print(f'Using HTML_to_PDF aka browser based pdf generator')
+            print(f'WARNING: Not Implemented: Using HTML_to_PDF aka browser based pdf generator')
             # pdf_base64 = HTML_to_PDF(html_file_name)
             # if delete_html_file:
-            #     os.remove(html_file_name)
+            #      os.remove(html_file_name)
+            #
+        try:
+            gsheets_row_values = [[job.get_dt_string(fmt='%Y-%m-%d'), job.id, job.company, 'Found', job.title, job.compensation, job.office_policy, job.location, '',job.link, job.get_fname(), job.get_dt_string(fmt='%Y-%m-%d')]]
+            gs = GSheets()
+            sheet_name = gc.get("sheet_name")
+            cells = gs.find(sheet_name, "A:B", job.id)
+            if not cells:
+                row = gs.find_first_non_empty_cell_in_column(sheet_name, 'B')
+                gs.update(sheet_name,f'A{row}', gsheets_row_values)
+            else:
+                c, r = gs.split_RC_into_R_and_C(cells[0])
+                gs.update(sheet_name, f'A{r}', gsheets_row_values)
+        except Exception as e:
+            print(f'Failed saving data to GSheets for id:{job.id} Error:{e}')
+
+        # saving files to GDrive
+        try:
+            gd = GDrive()
+            local_folder_name=os.path.dirname(resume_html_file_name)
+            g_parent_folder_id = gc.get("gdrive_data_path_id")
+            gd.upload_folder(local_folder_name, gparent_folder_id=g_parent_folder_id)
+        except Exception as e:
+            print(f'Failed saving data to GDrive for id:{job.id} Error:{e}')
+
         return pdf_base64

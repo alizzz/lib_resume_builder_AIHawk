@@ -140,7 +140,7 @@ class HtmlResume(HtmlDoc):
         exp_key_resps = '\n'.join(exp_kr_rows) if exp_kr_rows else ''
 
         exp_skills_chunk = read_chunk('exp_skills')
-        exp_skills = ', '.join(exp.skills_acquired)
+        exp_skills = ', '.join(exp.skills_acquired) if exp.skills_acquired else ''
 
         map = {
             "position": exp.position,
@@ -150,7 +150,7 @@ class HtmlResume(HtmlDoc):
             "industry": exp.industry,
             "exp_summary": exp.summary,
             "exp_key_resps": exp_key_resp_chunk.format(exp_key_resp_rows=exp_key_resps),
-            "exp_skills": exp_skills_chunk.format(exp_skills=exp_skills)
+            "exp_skills": exp_skills_chunk.format(exp_skills=exp_skills) if exp_skills else ''
         }
 
         return map
@@ -211,8 +211,11 @@ class HtmlResume(HtmlDoc):
         skills_chunk = read_chunk('skills')
         skills_row_chunk = read_chunk("skill_li")
 
-        skill_rows='\n'.join([skills_row_chunk.format(category=sk.key, skill_lst=sk.value) for sk in self.resume.skills if sk])
-        return skills_chunk.format(skills=skill_rows)
+        if self.resume.skills:
+            skill_rows='\n'.join([skills_row_chunk.format(category=sk.key, skill_lst=sk.value) for sk in self.resume.skills if sk])
+            return skills_chunk.format(skills=skill_rows)
+        else:
+            return ''
 
     def projects(self)->str:
         pass

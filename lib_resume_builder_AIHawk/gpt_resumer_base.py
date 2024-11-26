@@ -1,12 +1,14 @@
 import os
 import re
 import textwrap
+import traceback
 from typing import Dict, List
 import json
 import yaml
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.human import HumanMessage
 from langchain_core.messages.base import BaseMessage
+from langchain_core.messages.system import SystemMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
@@ -15,7 +17,7 @@ from lib_resume_builder_AIHawk.asset_manager import PromptManager
 from lib_resume_builder_AIHawk.llm_logger import LLMLogger
 from lib_resume_builder_AIHawk.resume import Resume
 from lib_resume_builder_AIHawk.utils import read_chunk, find_valid_path
-from src.job import Job
+from src.job import Job, JobRelevance
 
 # removes \n and multiple spaces from a string
 def clean_html_string(html_string):
@@ -165,14 +167,50 @@ class LLMResumerBase:
     def is_relevant_job(self, job: Job,
                         relevance_criteria: str = 'software development, software engineering, machine learning, data science, analytics, or AI') -> bool:
         relevant = False
+
+        if job.relevancy and job.relevancy.lower() !='unk':
+            print(f"In is_relevant for jobid:{job.id}. Value has been set to {job.is_relevant}. skipping")
+            return job.is_relevant
+
         try:
-            if job.job_description_summary is not None and len(job.job_description_summary) > 0:
+            if job.job_description_summary:
+                job_desc = job.job_description_summary
+            else:
+                if not job.description:
+                    raise Exception('Both job description and job description summary are empty. Unable to continue')
+                job_desc = job.description
+
+            parser = PydanticOutputParser(pydantic_object=JobRelevance)
+
+            prompt = self._load_and_prepare_prompt(prompt_key='is_job_description_relevant',
+                                                   map_data={"relevance_criteria": relevance_criteria,
+                                                             "job_desc": job.job_description_summary},
+                                                   parser=parser, msg_chain=self.msg_chain)
+
+            relevance: JobRelevance = self._invoke_chain(prompt, parser=parser, msg_chain=self.msg_chain,
+                                                         llm=self.llm_cheap)
+
+            print(
+                f'JobRelevance: Job: {job.title} at {job.company} is {'' if relevance.relevant else 'not'} relevant with confidence {relevance.confidence * 100}%')
+
+            job.relevancy = relevance.relevant
+            job.is_relevant_confidence = relevance.confidence
+            job.industry = relevance.industry
+            job.family = relevance.family
+
+            return job.relevancy
+        except Exception as e:
+            print(f"Error while extracting job relevance for job id: {job.id} Error:{e} {traceback.format_exc()}")
+
+        try:
+            if job.job_description_summary:
                 job_desc = job.job_description_summary
             else:
                 if not job.description:
                     raise Exception('Both job description and job description summary are empty. Unable to continue')
                 job_desc = job.description
             # ToDo Load prompt from file (or dict)
+            parser = PydanticOutputParser(pydantic_object=JobRelevance)
             prompt_is_relevant = """You are an experienced HR professional and job desciption analyst. 
             Read the job description and thoroughly analyze it. Answer the question if this job is relevant to {relevance_criteria}. 
             Answer only the relevance and your confidence in the answer. Respond with the valid json using the following format
@@ -213,4 +251,54 @@ class LLMResumerBase:
 
 
 
+    def _load_and_prepare_prompt(self,  prompt_key: str, map_data: dict= {}, parser=None, msg_chain: List[BaseMessage]=[],
+                                 do_not_use_long_message_chain:bool = True, no_system_prompt:bool=False) -> ChatPromptTemplate:
+        try:
+            if not parser:
+                parser = StrOutputParser()
 
+            if isinstance(parser, StrOutputParser):
+                format_instructions = "Provide a plain text response without any extra formatting"
+            else:
+                try:
+                    format_instructions = parser.get_format_instructions()
+                except:
+                    format_instructions = ''
+
+            prompt_template = PromptManager().load_prompt(prompt_key, map=map_data)
+            formatted_prompt = self._preprocess_template_string(
+                prompt_template, format_instructions=format_instructions
+            )
+
+            #Note: To maintain continuity of responses we need to send msg_chain
+            #But it is expensive - a lot of tokens in the chain
+            #Also every requiest is pretty much self-sufficient, and does not depend on previous answers
+            #therefore here we reduce number of messages in the chain, and pretend that this is the first message
+            human_message = HumanMessage(formatted_prompt, prompt_key=prompt_key, job_id=map_data.get("job_id"))
+
+            msg_chain.append(human_message)
+            if do_not_use_long_message_chain:
+                msg = [SystemMessage(self.system_msg)] if (not no_system_prompt and self.system_msg)  else []
+
+                msg.append(human_message)
+            else:
+                msg = [m for m in msg_chain]
+
+            return ChatPromptTemplate(msg)
+        except Exception as e:
+            print(f"Error loading or preparing prompt {prompt_key}: {e}")
+            #self.logger.error(f"Error loading or preparing prompt {prompt_key}: {e}")
+            raise e
+
+    def _invoke_chain(self, prompt_template, parser, msg_chain: List[BaseMessage]=[], key:str=None, llm:LoggerChatModel=None):
+        try:
+            if not llm: llm = self.llm_cheap
+
+            chain = prompt_template | llm
+            output:AIMessage = chain.invoke({})
+
+            msg_chain.append(output)
+            return parser.invoke(output)
+        except Exception as e:
+            print(f"Error invoking chain: {e}")
+            raise e
